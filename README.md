@@ -1,4 +1,4 @@
-# 🎵 Youtube Downloader v1.2.0
+# 🎵 Youtube Downloader v1.2.1
 
 Une application simple pour télécharger vos vidéos 🎬 et playlists 📜 YouTube en format MP3.
 
@@ -22,7 +22,7 @@ Une application simple pour télécharger vos vidéos 🎬 et playlists 📜 You
 
 ## 🛠️ Informations Techniques
 
-*   **Version** : 1.2.0
+*   **Version** : 1.2.1
 *   **Langage** : JavaScript
 *   **Dépendances** : `yt-dlp`, `ffmpeg`, `electron`
 *   **Développeur** : Danny Berger

@@ -57,36 +57,88 @@ h1{
 
 /* champ input */
 
-#urlInput{
-
-  display:block;
-
+.input-group {
+  display: flex;
+  align-items: center;
   width:95%;
-
   margin:0 auto;
-
-  padding:16px 20px;
-
-  font-size:1rem;
-
+  padding: 8px 15px;
   border-radius:14px;
-
   border:1px solid rgba(200,200,210,0.35);
-
   background:rgba(255,255,255,0.7);
-
-  outline:none;
-
+  transition: 0.2s;
 }
 
-#urlInput:focus{
-
+.input-group:focus-within {
   border-color:#a0b0c0;
-
   background:white;
-
 }
 
+#urlInput{
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  font-size:1rem;
+  outline:none;
+  min-width: 0;
+}
+
+/* Bouton coller */
+#pasteBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #8a8a8f;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+#pasteBtn:hover {
+  background: rgba(0,0,0,0.05);
+  color: #1281ff;
+}
+
+/* Carte de prévisualisation */
+.preview-card {
+  width: 90%;
+  margin: 20px auto 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-align: left;
+}
+
+.preview-thumb {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  background-color: #ddd;
+}
+
+.preview-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.preview-meta {
+  font-size: 0.8rem;
+  color: #8a8a8f;
+  margin: 0;
+}
 
 /* bouton */
 
