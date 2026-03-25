@@ -1,13 +1,11 @@
-# 🎵 Youtube Downloader v1.2.2
+# 🎵 Youtube Downloader v1.2.5
 
 Une application simple pour télécharger vos vidéos 🎬 et playlists 📜 YouTube en format MP3.
 
-### 📦 Quoi de neuf dans la v1.2.2 ?
+### 📦 Quoi de neuf dans la v1.2.5 ?
 
-*   **Prévisualisation instantanée** : Affiche la miniature et le titre dès que vous collez un lien.
-*   **Support des Playlists** : Prévisualisation épurée affichant la miniature et le nombre de titres.
-*   **Bouton "Coller"** : Un nouveau bouton pour coller rapidement votre lien.
-*   **Mises à jour automatiques** : L'application détectera et installera les futures mises à jour toute seule.
+*   **Vitesse optimisée ⚡** : Refonte complète de la stratégie de téléchargement (Sliding Window) et fusion des étapes FFmpeg pour un processus beaucoup plus rapide.
+*   **Mise à jour technique 🛠️** : Mise à jour du binaire `yt-dlp` pour garantir une compatibilité maximale et des téléchargements plus stables.
 
 ## ✨ Fonctionnalités
 
@@ -18,7 +16,7 @@ Une application simple pour télécharger vos vidéos 🎬 et playlists 📜 You
 *   🏷️ Ajout automatique des métadonnées :
     *   Titre, artiste, pochette, nom de l'album.
     *   Numéro de piste et d'album pour les playlists.
-*   📦 Application portable (un seul fichier `.exe`).
+*   📦 Application portable.
 
 ## 🚀 Comment l'utiliser ?
 
@@ -29,7 +27,7 @@ Une application simple pour télécharger vos vidéos 🎬 et playlists 📜 You
 
 ## 🛠️ Informations Techniques
 
-*   **Version** : 1.2.2
+*   **Version** : 1.2.5
 *   **Langage** : JavaScript
 *   **Dépendances** : `yt-dlp`, `ffmpeg`, `electron`
 *   **Développeur** : Danny Berger

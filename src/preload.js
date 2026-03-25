@@ -10,5 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   onError: (callback) => ipcRenderer.on('error', (_, msg) => callback(msg)),
   onFinish: (callback) => ipcRenderer.on('finish', (_) => callback()),
   // Mises à jour
-  onUpdateMsg: (callback) => ipcRenderer.on('update-msg', (_, text, type) => callback(text, type))
+  onUpdateMsg: (callback) => ipcRenderer.on('update-msg', (_, text, type) => callback(text, type)),
+  // Infos App
+  getAppVersion: () => ipcRenderer.invoke('get-app-version')
 });

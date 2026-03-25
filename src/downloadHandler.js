@@ -15,8 +15,11 @@ class DownloadHandler {
       ? path.join(process.resourcesPath, 'bin')
       : path.join(__dirname, '..', 'bin');
 
-    this.ytDlpPath = path.join(resourcePath, 'yt-dlp.exe');
-    this.ffmpegPath = path.join(resourcePath, 'ffmpeg.exe');
+    const ytDlpBinary = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
+    const ffmpegBinary = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+
+    this.ytDlpPath = path.join(resourcePath, ytDlpBinary);
+    this.ffmpegPath = path.join(resourcePath, ffmpegBinary);
   }
 
   sendUpdate(channel, ...args) {
@@ -52,9 +55,9 @@ class DownloadHandler {
       this.sendUpdate('status', message, '#0984e3');
 
       let completed = 0;
-      let errors = [];
+      const errors = [];
 
-      const CONCURRENCY_LIMIT = 5;
+      const CONCURRENCY_LIMIT = 8;
       const chunks = [];
 
       for (let i = 0; i < total; i += CONCURRENCY_LIMIT) {
@@ -90,7 +93,7 @@ class DownloadHandler {
 
         });
 
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
 
         currentIndex += chunk.length;
 
@@ -159,8 +162,6 @@ class DownloadHandler {
 
     await this.runCommand(this.ytDlpPath, args);
 
-    await new Promise(r => setTimeout(r, 300));
-
     const files = await fs.readdir(this.folder);
 
     const prefix = `${String(index).padStart(3, '0')}_`;
@@ -188,37 +189,28 @@ class DownloadHandler {
         path.basename(audioFilename, '.mp3')
       );
 
-      const croppedThumbPath = `${baseName}_square.jpg`;
-
       const tempMp3Path = `${baseName}_temp.mp3`;
 
       try {
-
-        await this.runCommand(this.ffmpegPath, [
-          '-y',
-          '-i', fullThumbPath,
-          '-vf', 'crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2',
-          croppedThumbPath
-        ]);
 
         await this.runCommand(this.ffmpegPath, [
 
           '-y',
 
           '-i', fullAudioPath,
+          '-i', fullThumbPath,
 
-          '-i', croppedThumbPath,
+          '-filter_complex',
+          '[1:v]crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2[v]',
 
           '-map', '0:a',
-
-          '-map', '1',
+          '-map', '[v]',
 
           '-c', 'copy',
 
           '-id3v2_version', '3',
 
           '-metadata:s:v', 'title=Album cover',
-
           '-metadata:s:v', 'comment=Cover (front)',
 
           '-disposition:v:0', 'attached_pic',
@@ -229,9 +221,11 @@ class DownloadHandler {
 
         await fs.rename(tempMp3Path, fullAudioPath);
 
-      } finally {
+        await this.safeUnlink(fullThumbPath);
 
-        await this.cleanThumbnails(prefix);
+      } catch (e) {
+
+        console.error(e);
 
       }
 
@@ -249,30 +243,9 @@ class DownloadHandler {
 
   }
 
-  async cleanThumbnails(prefix) {
-
-    const files = await fs.readdir(this.folder);
-
-    const thumbs = files.filter(f =>
-      f.startsWith(prefix) &&
-      (
-        f.endsWith('.jpg') ||
-        f.endsWith('.jpeg') ||
-        f.endsWith('.png') ||
-        f.endsWith('.webp')
-      )
-    );
-
-    for (const file of thumbs) {
-      await this.safeUnlink(path.join(this.folder, file));
-    }
-
-  }
-
   async safeUnlink(filePath) {
 
-    await fs.unlink(filePath)
-      .catch(() => {});
+    await fs.unlink(filePath).catch(() => {});
 
   }
 
@@ -283,7 +256,10 @@ class DownloadHandler {
       execFile(
         command,
         args,
-        { maxBuffer: 1024 * 1024 * 10 },
+        {
+          maxBuffer: 1024 * 1024 * 10,
+          windowsHide: true
+        },
         (error, stdout, stderr) => {
 
           if (error) {

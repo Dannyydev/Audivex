@@ -9,6 +9,18 @@ const previewTitle = document.getElementById('previewTitle');
 const previewMeta = document.getElementById('previewMeta');
 
 let debounceTimer; // Timer pour éviter trop de requêtes
+// Regex unifiée pour éviter les duplications et incohérences
+// Supporte : youtube.com, youtu.be, shorts, playlists, embeds
+const YOUTUBE_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=|playlist\?list=|embed\/|shorts\/)?[a-zA-Z0-9_-]{11,}/;
+
+// Au chargement de la page
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const version = await window.api.getAppVersion();
+        // On met à jour le titre qui contient la version dans le README
+        document.querySelector('h1').title = `v${version}`;
+    } catch (e) { console.error("Failed to get app version", e); }
+});
 
 function updateStatus(text, type) {
     statusLabel.textContent = text;
@@ -26,7 +38,7 @@ pasteBtn.addEventListener('click', async () => {
         // On déclenche l'événement input manuellement pour les futures écoutes
         urlInput.dispatchEvent(new Event('input'));
     } catch (err) {
-        console.error('Impossible de lire le presse-papier', err);
+        updateStatus('Impossible de lire le presse-papier (accès refusé ?)', 'error');
     }
 });
 
@@ -45,9 +57,7 @@ urlInput.addEventListener('input', () => {
 
     // On attend 300ms après la dernière frappe pour être réactif
     debounceTimer = setTimeout(async () => {
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
-        
-        if (youtubeRegex.test(url)) {
+        if (YOUTUBE_REGEX.test(url)) {
             // Affichage état chargement
             previewCard.style.display = 'flex';
             previewTitle.textContent = "Recherche des infos...";
@@ -61,9 +71,12 @@ urlInput.addEventListener('input', () => {
                 previewTitle.textContent = info.title;
                 if (info.isPlaylist) {
                     // Pour les playlists : juste le nombre de titres, propre et simple.
-                    previewMeta.textContent = `${info.count} titres`;
+                    // Si info.count est null (via oEmbed), on affiche un texte générique
+                    previewMeta.textContent = (info.count !== null) ? `${info.count} titres` : "Playlist détectée";
                 } else {
-                    previewMeta.textContent = `${info.uploader} • ${info.duration}`;
+                    // Gestion souple si la durée n'est pas dispo immédiatement
+                    const durationText = info.duration ? ` • ${info.duration}` : "";
+                    previewMeta.textContent = `${info.uploader}${durationText}`;
                 }
                 previewThumb.src = info.thumbnail;
                 previewThumb.style.opacity = "1";
@@ -80,10 +93,8 @@ urlInput.addEventListener('input', () => {
 
 downloadBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();
-    // Regex plus robuste pour valider les URLs YouTube (vidéo et playlist)
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=|playlist\?list=|embed\/|shorts\/)?[a-zA-Z0-9_-]{11,}/;
     
-    if (!url || !youtubeRegex.test(url)) {
+    if (!url || !YOUTUBE_REGEX.test(url)) {
         updateStatus("URL invalide.", 'error');
         return;
     }
@@ -92,6 +103,8 @@ downloadBtn.addEventListener('click', async () => {
     if (!folder) return;
 
     downloadBtn.disabled = true;
+    downloadBtn.classList.add('loading');
+    downloadBtn.querySelector('span').textContent = 'Téléchargement...';
     progressBar.style.width = '0%';
     window.api.startDownload({ url, folder });
 });
@@ -112,7 +125,7 @@ window.api.onProgress((percent, completed, total) => {
 window.api.onComplete((result) => {
     progressBar.style.width = '100%';
     const text = result.isPlaylist
-        ? `Téléchargement de la playlist terminé ! (${result.total} vidéos téléchargées).`
+        ? `Téléchargement de la playlist terminé ! (${result.total} vidéos).`
         : "Téléchargement terminé ! 🎧";
     updateStatus(text, 'success');
 });
@@ -123,6 +136,8 @@ window.api.onError((msg) => {
 
 window.api.onFinish(() => {
     downloadBtn.disabled = false;
+    downloadBtn.classList.remove('loading');
+    downloadBtn.querySelector('span').textContent = 'Télécharger';
 });
 
 // Gestion de l'affichage des mises à jour

@@ -1,4 +1,8 @@
 /* couleurs principales */
+* {
+  box-sizing: border-box;
+}
+
 body{
   margin:0;
   height:100vh;
@@ -6,6 +10,7 @@ body{
   background:#f8f9fa;
   color:#2c2c2e;
 
+  overflow: hidden;
   display:grid;
   place-items:center;
 }
@@ -23,8 +28,10 @@ body::before{
 /* bloc principal */
 .container{
 
-  width:90%;
-  max-width:580px;
+  /* S'adapte à la fenêtre : soit 580px, soit la largeur totale moins 40px (20px de marge de chaque côté) */
+  width: min(580px, calc(100% - 40px));
+
+  margin-top: 0;
 
   padding:50px 40px;
 
@@ -175,6 +182,19 @@ h1{
 
 }
 
+/* Style pour le bouton pendant le chargement */
+#downloadBtn.loading {
+  background: #5c6ac4; /* Une couleur un peu différente pour l'état de chargement */
+  cursor: wait;
+}
+
+#downloadBtn.loading > svg {
+  display: none; /* On cache l'icône de téléchargement */
+}
+
+#downloadBtn.loading > span {
+  margin-left: 0; /* On recentre le texte quand l'icône est cachée */
+}
 
 /* barre de progression */
 
