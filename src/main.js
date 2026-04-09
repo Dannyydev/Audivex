@@ -50,7 +50,7 @@ if (app.isPackaged) {
       body: `La version ${info.version} est en cours de téléchargement.`
     }).show();
   });
-  autoUpdater.on('update-not-available', () => {}); // Silence radio
+  autoUpdater.on('update-not-available', () => { }); // Silence radio
   autoUpdater.on('error', (err) => {
     const errorMessage = 'Erreur de mise à jour : ' + (err.message || 'Raison inconnue');
     sendUpdateMsg(`❌ ${errorMessage}`, 'error');
@@ -96,7 +96,7 @@ ipcMain.handle('get-video-info', async (event, url) => {
   const resourcePath = app.isPackaged
     ? path.join(process.resourcesPath, 'bin')
     : path.join(__dirname, '..', 'bin');
-  
+
   // Gestion extension selon l'OS
   const binaryName = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
   const ytDlpPath = path.join(resourcePath, binaryName);
@@ -107,7 +107,7 @@ ipcMain.handle('get-video-info', async (event, url) => {
     // On vérifie que fetch est disponible (Node 18+ / Electron récent)
     if ((url.includes('youtube.com') || url.includes('youtu.be')) && typeof fetch !== 'undefined') {
       const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-      
+
       fetch(oembedUrl)
         .then(res => {
           if (!res.ok) throw new Error('oEmbed failed');
@@ -115,7 +115,7 @@ ipcMain.handle('get-video-info', async (event, url) => {
         })
         .then(data => {
           const isPlaylist = url.includes('list=');
-          
+
           // Si c'est une playlist mais que oEmbed ne donne pas de miniature (fréquent sur les Mix),
           // on lève une erreur pour passer au "Slow Path" (yt-dlp) qui ira chercher l'image de la 1ère vidéo.
           if (isPlaylist && !data.thumbnail_url) throw new Error('Playlist sans miniature');
@@ -126,8 +126,8 @@ ipcMain.handle('get-video-info', async (event, url) => {
             thumbnail: data.thumbnail_url,
             uploader: data.author_name,
             // oEmbed ne donne pas la durée/nombre exact, mais c'est le prix de la vitesse
-            count: isPlaylist ? null : 0, 
-            duration: null 
+            count: isPlaylist ? null : 0,
+            duration: null
           });
         })
         .catch(() => {
@@ -160,7 +160,7 @@ ipcMain.handle('get-video-info', async (event, url) => {
               isPlaylist: true,
               title: data.title,
               thumbnail: data.thumbnail || (data.thumbnails && data.thumbnails.length ? data.thumbnails[data.thumbnails.length - 1].url : null) || (data.entries && data.entries.length ? data.entries[0].thumbnail : null),
-              uploader: data.uploader || data.channel || 'Inconnu',
+              uploader: data.uploader || data.channel || '',
               count: data.entries ? data.entries.length : 0
             });
           } else {
@@ -168,7 +168,7 @@ ipcMain.handle('get-video-info', async (event, url) => {
               isPlaylist: false,
               title: data.title,
               thumbnail: data.thumbnail,
-              uploader: data.uploader || data.channel || 'Inconnu',
+              uploader: data.uploader || data.channel || '',
               duration: data.duration_string || '--:--'
             });
           }

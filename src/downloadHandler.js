@@ -2,6 +2,7 @@ const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const { app } = require('electron');
+const { processAudioChannels } = require('./audioProcessor'); // Importez le nouveau module
 
 class DownloadHandler {
 
@@ -17,9 +18,11 @@ class DownloadHandler {
 
     const ytDlpBinary = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
     const ffmpegBinary = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+    const ffprobeBinary = process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
 
     this.ytDlpPath = path.join(resourcePath, ytDlpBinary);
     this.ffmpegPath = path.join(resourcePath, ffmpegBinary);
+    this.ffprobePath = path.join(resourcePath, ffprobeBinary);
   }
 
   sendUpdate(channel, ...args) {
@@ -119,133 +122,113 @@ class DownloadHandler {
   }
 
   async processItem(index, isPlaylist) {
-
-    const template = path.join(
+    const rawAudioTemplate = path.join(
       this.folder,
       `${String(index).padStart(3, '0')}_%(title)s.%(ext)s`
     );
 
-    const args = [
+    const prefix = `${String(index).padStart(3, '0')}_`;
+    let finalDest = "";
 
+    const ytDlpArgs = [
       this.url,
-
       '--ffmpeg-location', this.ffmpegPath,
-
       '-f', 'bestaudio/best',
-
       '-x',
-
-      '--audio-format', 'mp3',
-
-      '--audio-quality', '0',
-
+      '--keep-video',
       '--write-thumbnail',
-
-      '--embed-thumbnail',
-
-      '--embed-metadata',
-
       '--convert-thumbnails', 'jpg',
-
       '--parse-metadata', 'playlist_title:%(album)s',
-
-      '-o', template
-
+      '--write-info-json',
+      '-o', rawAudioTemplate
     ];
 
     if (isPlaylist) {
-
-      args.push('--playlist-items', String(index));
-      args.push('--parse-metadata', 'playlist_index:%(track_number)s');
-
+      ytDlpArgs.push('--playlist-items', String(index));
+      ytDlpArgs.push('--parse-metadata', 'playlist_index:%(track_number)s');
     }
 
-    await this.runCommand(this.ytDlpPath, args);
+    try {
+      // 1. Téléchargement
+      await this.runCommand(this.ytDlpPath, ytDlpArgs);
 
-    const files = await fs.readdir(this.folder);
+      const files = await fs.readdir(this.folder);
 
-    const prefix = `${String(index).padStart(3, '0')}_`;
+      // Identification précise des fichiers (on exclut les images du raw audio)
+      const rawAudioFile = files.find(f => f.startsWith(prefix) && !f.endsWith('.mp3') && !f.endsWith('.json') && !['.jpg', '.webp', '.png'].some(ext => f.endsWith(ext)));
+      const infoJsonFile = files.find(f => f.startsWith(prefix) && f.endsWith('.info.json'));
+      const thumbFile = files.find(f => f.startsWith(prefix) && (f.endsWith('.jpg') || f.endsWith('.webp') || f.endsWith('.png')));
 
-    const audioFilename = files.find(f =>
-      f.startsWith(prefix) && f.toLowerCase().endsWith('.mp3')
-    );
+      if (!rawAudioFile) throw new Error(`Fichier audio non trouvé pour ${this.url}`);
 
-    if (!audioFilename) {
-      throw new Error(`Fichier audio non trouvé pour ${index}`);
-    }
-
-    const fullAudioPath = path.join(this.folder, audioFilename);
-
-    const thumbFilename = files.find(f =>
-      f.startsWith(prefix) && f.toLowerCase().endsWith('.jpg')
-    );
-
-    if (thumbFilename) {
-
-      const fullThumbPath = path.join(this.folder, thumbFilename);
-
-      const baseName = path.join(
-        this.folder,
-        path.basename(audioFilename, '.mp3')
-      );
-
-      const tempMp3Path = `${baseName}_temp.mp3`;
-
-      try {
-
-        await this.runCommand(this.ffmpegPath, [
-
-          '-y',
-
-          '-i', fullAudioPath,
-          '-i', fullThumbPath,
-
-          '-filter_complex',
-          '[1:v]crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2[v]',
-
-          '-map', '0:a',
-          '-map', '[v]',
-
-          '-c', 'copy',
-
-          '-id3v2_version', '3',
-
-          '-metadata:s:v', 'title=Album cover',
-          '-metadata:s:v', 'comment=Cover (front)',
-
-          '-disposition:v:0', 'attached_pic',
-
-          tempMp3Path
-
-        ]);
-
-        await fs.rename(tempMp3Path, fullAudioPath);
-
-        await this.safeUnlink(fullThumbPath);
-
-      } catch (e) {
-
-        console.error(e);
-
+      // 1.1 Métadonnées
+      let metadata = {};
+      if (infoJsonFile) {
+        try {
+          const content = await fs.readFile(path.join(this.folder, infoJsonFile), 'utf8');
+          const info = JSON.parse(content);
+          metadata = {
+            title: info.title,
+            artist: info.uploader || info.artist || '',
+            date: info.upload_date ? info.upload_date.substring(0, 4) : ''
+          };
+          if (isPlaylist) {
+            metadata.album = info.playlist_title || info.album || '';
+            metadata.track = info.playlist_index || index;
+          }
+        } catch (err) { console.error("Metadata error:", err); }
       }
 
+      const fullRawPath = path.join(this.folder, rawAudioFile);
+      const mp3BaseName = path.basename(rawAudioFile, path.extname(rawAudioFile));
+      const fullMp3Path = path.join(this.folder, `${mp3BaseName}.mp3`);
+
+      // 2. Conversion MP3 + Canaux + Métadonnées
+      await processAudioChannels(fullRawPath, fullMp3Path, metadata, {
+        ffmpegPath: this.ffmpegPath,
+        ffprobePath: this.ffprobePath
+      });
+
+      // 3. Intégration Miniature (support JPG et WEBP)
+      if (thumbFile) {
+        const fullThumbPath = path.join(this.folder, thumbFile);
+        const tempMp3Path = path.join(this.folder, `${mp3BaseName}_temp.mp3`);
+
+        // Correction : Échappement des virgules pour FFmpeg (\\,) et ajout du codec vidéo (mjpeg) car on filtre
+        await this.runCommand(this.ffmpegPath, [
+          '-y', '-i', fullMp3Path, '-i', fullThumbPath,
+          '-filter_complex', '[1:v]crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2[v]',
+          '-map', '0:a', '-map', '[v]',
+          '-c:a', 'copy', '-c:v', 'mjpeg', '-id3v2_version', '3',
+          '-metadata:s:v', 'title=Album cover', '-disposition:v:0', 'attached_pic',
+          tempMp3Path
+        ]);
+        await fs.rename(tempMp3Path, fullMp3Path);
+      }
+
+      // 4. Renommage final sans le préfixe
+      const finalName = mp3BaseName.substring(prefix.length) + '.mp3';
+      finalDest = path.join(this.folder, finalName);
+      if (fullMp3Path !== finalDest) await fs.rename(fullMp3Path, finalDest);
+
+      return true;
+    } finally {
+      // 5. NETTOYAGE ABSOLU : On supprime TOUT ce qui commence par le préfixe (sauf le résultat final)
+      try {
+        const remaining = await fs.readdir(this.folder);
+        for (const file of remaining) {
+          const fullPath = path.join(this.folder, file);
+          if (file.startsWith(prefix) && fullPath !== finalDest) {
+            await this.safeUnlink(fullPath);
+          }
+        }
+      } catch (e) { console.error("Cleanup error:", e); }
     }
-
-    const finalFilename = audioFilename.substring(prefix.length);
-
-    const finalDest = path.join(this.folder, finalFilename);
-
-    if (fullAudioPath !== finalDest) {
-      await fs.rename(fullAudioPath, finalDest);
-    }
-
-    return true;
-
   }
 
   async safeUnlink(filePath) {
 
-    await fs.unlink(filePath).catch(() => {});
+    await fs.unlink(filePath).catch(() => { });
 
   }
 
@@ -253,6 +236,7 @@ class DownloadHandler {
 
     return new Promise((resolve, reject) => {
 
+      console.log(`[Exec] Running: ${command} ${args.join(' ')}`);
       execFile(
         command,
         args,

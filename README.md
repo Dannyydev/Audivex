@@ -1,22 +1,26 @@
-# 🎵 Youtube Downloader v1.2.5
+# 🎵 Youtube Downloader v1.2.7
 
-Une application simple pour télécharger vos vidéos 🎬 et playlists 📜 YouTube en format MP3.
+Une application simple pour télécharger vos musiques et playlists YouTube en format MP3.
 
-### 📦 Quoi de neuf dans la v1.2.5 ?
+### 📦 Quoi de neuf dans la v1.2.7 ?
 
-*   **Vitesse optimisée ⚡** : Refonte complète de la stratégie de téléchargement (Sliding Window) et fusion des étapes FFmpeg pour un processus beaucoup plus rapide.
-*   **Mise à jour technique 🛠️** : Mise à jour du binaire `yt-dlp` pour garantir une compatibilité maximale et des téléchargements plus stables.
+*   **[FIX] Correction du nettoyage automatique  🧹** : Correction de la suppression systématique de tous les fichiers temporaires (`.info.json`, `.webp`, `.jpg`, `.m4a`, etc.) grâce à un nouveau système de gestion par préfixe.
+*   **[FIX] Correction de l'intégration des miniatures 🖼️** : Correction du bug de filtre FFmpeg sur Windows.
+*   **[ADD] Métadonnées ID3 précises 🏷️** : Passage à l'extraction via JSON pour garantir l'exactitude des informations (Artiste, Titre, Année, Album et Numéro de piste).
+
+*   **[ADD] Spatialisation intelligente 🎧** : Moteur audio capable de détecter le multicanal (5.1, 7.1) pour appliquer un downmix spatialisé vers la stéréo.
+*   **[ADD] Vitesse optimisée ⚡** : Amélioration de la stratégie de téléchargement en parallèle (Sliding Window) pour les playlists volumineuses.
 
 ## ✨ Fonctionnalités
 
 *   🎨 Interface graphique simple et claire.
 *   🎬 Téléchargement de vidéos uniques ou de playlists complètes.
 *   🎧 Conversion automatique en MP3 avec la meilleure qualité audio disponible.
-*   ⚡ Téléchargements parallèles pour les playlists.
-*   🏷️ Ajout automatique des métadonnées :
+*   🎧 **Conservation des canaux audio** : Maintien des canaux mono/stéréo et downmix intelligent des sources multicanaux vers le stéréo pour l'MP3.
+*   🏷️ **Gestion complète des métadonnées** :
     *   Titre, artiste, pochette, nom de l'album.
     *   Numéro de piste et d'album pour les playlists.
-*   📦 Application portable.
+*   📦 **Application robuste** : Gestion d'erreurs améliorée et nettoyage des résidus de téléchargement.
 
 ## 🚀 Comment l'utiliser ?
 
@@ -27,7 +31,7 @@ Une application simple pour télécharger vos vidéos 🎬 et playlists 📜 You
 
 ## 🛠️ Informations Techniques
 
-*   **Version** : 1.2.5
+*   **Version** : 1.2.7
 *   **Langage** : JavaScript
 *   **Dépendances** : `yt-dlp`, `ffmpeg`, `electron`
 *   **Développeur** : Danny Berger
