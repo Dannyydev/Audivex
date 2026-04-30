@@ -1,4 +1,4 @@
-#  Audivex `v1.3.1`
+#  Audivex `v1.3.2`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
