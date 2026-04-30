@@ -28,7 +28,9 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.2.13**
+**v1.3.0**
+# Changement de nom ! `Youtube Downloader` deviens officielement `Audivex`
+
 - Refonte totale de l'interface avec mise à l'échelle proportionnelle.
 - Adoption de la typographie **Outfit**.
 - Optimisation du moteur de prévisualisation via oEmbed.
