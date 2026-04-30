@@ -1,4 +1,4 @@
-#  Youtube Downloader `v1.2.13`
+#  Audivex `v1.3.0`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
