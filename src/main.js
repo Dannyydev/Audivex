@@ -48,11 +48,9 @@ if (app.isPackaged) {
     sendUpdateMsg(`📥 Mise à jour vers la version (v${info.version}) en cours de téléchargement`, 'info');
   });
 
-  autoUpdater.on('update-not-available', () => sendUpdateMsg('✅ Audivex est à jour', 'info'));
-
   autoUpdater.on('error', (err) => {
     console.error('Update error:', err);
-    sendUpdateMsg('Erreur de mises a jours, verifiez votre connexion internet ou bien contacter le support sur https://audivex.ct.ws/contact', 'error');
+    sendUpdateMsg('Erreur de mise à jour. Vérifiez votre connexion ou contactez le support.', 'error');
   });
 
   autoUpdater.on('update-downloaded', (info) => {
