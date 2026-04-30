@@ -29,12 +29,9 @@
 
 ### 📋 Dernières mises à jour
 **v1.3.0**
-<<<<<<< HEAD
+
 # Changement de nom ! 
 # `Youtube Downloader` deviens officielement `Audivex`
-=======
-# Changement de nom ! `Youtube Downloader` deviens officielement `Audivex`
->>>>>>> 9a967b988e79937a74f3c5cf8d18301862759ff8
 
 - Refonte totale de l'interface avec mise à l'échelle proportionnelle.
 - Adoption de la typographie **Outfit**.
