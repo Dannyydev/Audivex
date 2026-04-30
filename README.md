@@ -1,4 +1,4 @@
-#  Audivex `v1.3.0`
+#  Audivex `v1.3.1`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -28,9 +28,8 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.0**
+**v1.3.1**
 
-# Changement de nom ! 
 # `Youtube Downloader` deviens officielement `Audivex`
 
 - Refonte totale de l'interface avec mise à l'échelle proportionnelle.

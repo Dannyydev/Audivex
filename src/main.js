@@ -30,7 +30,7 @@ function createWindow() {
   // Gestion des mises à jour automatiques
   if (app.isPackaged) {
     // Vérifier les mises à jour immédiatement au lancement
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdates();
   }
 }
 
@@ -42,28 +42,24 @@ if (app.isPackaged) {
     }
   };
 
-  autoUpdater.on('checking-for-update', () => sendUpdateMsg('🔍 Recherche de mises à jour...', 'info'));
+  autoUpdater.on('checking-for-update', () => sendUpdateMsg('Reherche des mises à jour...', 'info'));
+
   autoUpdater.on('update-available', (info) => {
-    sendUpdateMsg('🎉 Mise à jour trouvée ! Téléchargement en cours...', 'info');
-    new Notification({
-      title: 'Mise à jour disponible',
-      body: `La version ${info.version} est en cours de téléchargement.`
-    }).show();
+    sendUpdateMsg(`📥 Mise à jour vers la version (v${info.version}) en cours de téléchargement`, 'info');
   });
-  autoUpdater.on('update-not-available', () => { }); // Silence radio
+
+  autoUpdater.on('update-not-available', () => sendUpdateMsg('✅ Audivex est à jour', 'info'));
+
   autoUpdater.on('error', (err) => {
-    const errorMessage = 'Erreur de mise à jour : ' + (err.message || 'Raison inconnue');
-    sendUpdateMsg(`❌ ${errorMessage}`, 'error');
-    new Notification({
-      title: 'Erreur de mise à jour',
-      body: errorMessage
-    }).show();
+    console.error('Update error:', err);
+    sendUpdateMsg('Erreur de mises a jours, verifiez votre connexion internet ou bien contacter le support sur https://audivex.ct.ws/contact', 'error');
   });
+
   autoUpdater.on('update-downloaded', (info) => {
-    sendUpdateMsg('✅ Mise à jour prête ! Cliquez sur la notification pour redémarrer.', 'success');
+    sendUpdateMsg('Mise à jour instalée ! Redémarrez pour l\'installer.', 'success');
     const notif = new Notification({
-      title: 'Mise à jour prête à être installée',
-      body: `La version ${info.version} est téléchargée. Cliquez pour redémarrer et installer.`,
+      title: 'Mise a jour téléchargée',
+      body: `La version ${info.version} a été téléchargée. Cliquez ici pour mettre a jour l'application.`,
     });
     notif.on('click', () => autoUpdater.quitAndInstall());
     notif.show();
