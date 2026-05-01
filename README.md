@@ -1,4 +1,4 @@
-#  Audivex `v1.3.3`
+#  Audivex `v1.3.4`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -12,9 +12,9 @@
 
 *   🏷️ **Métadonnées Personnalisables** : Un menu dédié vous permet de choisir précisément quels tags appliquer (Titre, Artiste, Album, Année, N° de piste et Pochette).
 
-*   🚀 **Prévisualisation Instantanée** : Visualisez les informations de la vidéo ou la playlist dès que vous collez le lien.
+*   🚀 **Prévisualisation Instantanée** : Visualisez les informations de la vidéo ou de la playlist dès que vous collez le lien.
 
-*   🔄 **Mises à jour Automatiques** : Système intégré pour garantir que vous disposez toujours des dernières versions de `Youtube Downloader`.
+*   🔄 **Mises à jour Automatiques** : Système intégré pour garantir que vous disposez toujours des dernières versions d' `Audivex`.
 
 ## 🛠️ Utilisation
 
@@ -33,14 +33,9 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.3**
+**v1.3.4**
 
-# `Youtube Downloader` deviens officielement `Audivex`
-
-- Refonte totale de l'interface avec mise à l'échelle proportionnelle.
-- Adoption de la typographie **Outfit**.
-- Optimisation du moteur de prévisualisation via oEmbed.
-- Correction de la gestion des canaux audio pour les fichiers MP3.
+* [Fix] Problème de mise à jour indisponible réglé
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
