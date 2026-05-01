@@ -1,4 +1,4 @@
-#  Audivex `v1.3.5`
+#  Audivex `v1.3.6`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -33,9 +33,10 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.5**
+**v1.3.6**
 
-* [Update] yt-dlp update
+* [Update] Ajout des métadonnées de paroles ! 
+*   **Audivex** est maintenant capable d'ajouter les paroles de votre musique dans ces métadonnées pour pouvoir les visualiser dans vos lecteurs de musique
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
