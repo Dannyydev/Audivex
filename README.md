@@ -38,5 +38,7 @@
 * [Update] Ajout des métadonnées de paroles ! 
 *   **Audivex** est maintenant capable d'ajouter les paroles de votre musique dans ces métadonnées pour pouvoir les visualiser dans vos lecteurs de musique
 
+* [Add] Ajout du bouton "Pochette Playlist"
+
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*

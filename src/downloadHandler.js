@@ -12,7 +12,11 @@ class DownloadHandler {
     this.url = url;
     this.folder = folder;
     this.window = window;
-    this.options = options;
+    this.options = {
+      usePlaylistThumbnail: false, // Par défaut, utilise la miniature de chaque titre
+      ...options
+    };
+    this.playlistCoverPath = null;
 
     const resourcePath = app.isPackaged
       ? path.join(process.resourcesPath, 'bin')
@@ -42,12 +46,60 @@ class DownloadHandler {
       const info = await this.runCommand(this.ytDlpPath, [
         this.url,
         '--dump-single-json',
-        '--flat-playlist'
+        '--flat-playlist',
+        '--yes-playlist'
       ]);
 
       const data = JSON.parse(info);
 
-      const isPlaylist = data._type === 'playlist';
+      // Une playlist peut être identifiée par son type ou par la présence d'entrées multiples
+      const isPlaylist = data._type === 'playlist' || (data.entries && data.entries.length > 1);
+      console.log(`[Start] Playlist détectée: ${isPlaylist}, Entries: ${data.entries?.length || 0}, Type: ${data._type}`);
+
+      // Si c'est une playlist et que l'utilisateur veut la miniature globale
+      if (isPlaylist && this.options.thumbnail !== false && this.options.usePlaylistThumbnail) {
+        // Stratégie robuste pour trouver la pochette de l'album/playlist
+        let thumbUrl = data.thumbnail;
+
+        if (!thumbUrl && data.thumbnails && data.thumbnails.length > 0) {
+          thumbUrl = data.thumbnails.reduce((prev, curr) =>
+            ((prev.width || 0) * (prev.height || 0) > (curr.width || 0) * (curr.height || 0)) ? prev : curr
+          ).url;
+        }
+
+        // Fallback pour YouTube Music / Playlists où la miniature est dans les entries
+        if (!thumbUrl && data.entries && data.entries[0]) {
+          const first = data.entries[0];
+          thumbUrl = first.thumbnail || (first.thumbnails && first.thumbnails.length > 0
+            ? first.thumbnails.reduce((prev, curr) => ((prev.width || 0) * (prev.height || 0) > (curr.width || 0) * (curr.height || 0)) ? prev : curr).url
+            : null);
+        }
+
+        console.log(`[Thumbnail] URL détectée pour la playlist: ${thumbUrl}`);
+
+        if (thumbUrl) {
+          this.sendUpdate('status', "Téléchargement de la miniature de la playlist...", '#0984e3');
+          const tempPath = path.join(this.folder, `playlist_cover_${Date.now()}.jpg`);
+          try {
+            // Ajout d'un User-Agent pour éviter d'être bloqué par YouTube
+            const response = await fetch(thumbUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+              }
+            });
+            if (response.ok) {
+              const arrayBuffer = await response.arrayBuffer();
+              await fs.writeFile(tempPath, Buffer.from(arrayBuffer));
+              this.playlistCoverPath = tempPath;
+              this.sendUpdate('status', "Pochette de playlist récupérée ✅", '#0984e3');
+              console.log(`[Thumbnail] Pochette enregistrée: ${this.playlistCoverPath}`);
+            }
+          } catch (err) {
+            console.error("[Thumbnail] Erreur téléchargement miniature playlist:", err);
+          }
+        }
+      }
+
       const entries = isPlaylist ? (data.entries || []) : [data];
       const total = entries.length;
 
@@ -116,6 +168,10 @@ class DownloadHandler {
       this.sendUpdate('error', `Erreur: ${e.message}`);
 
     } finally {
+      // Nettoyage de la miniature de playlist globale
+      if (this.playlistCoverPath) {
+        await this.safeUnlink(this.playlistCoverPath);
+      }
 
       this.sendUpdate('finish');
 
@@ -124,9 +180,10 @@ class DownloadHandler {
   }
 
   async processItem(index, isPlaylist, entry, playlistTitle) {
+    // Utilisation impérative de %(id)s pour éviter les erreurs de système de fichiers Windows
     const rawAudioTemplate = path.join(
       this.folder,
-      `${String(index).padStart(3, '0')}_%(id)s.%(ext)s`
+      `${String(index).padStart(3, '0')}_%(id)s.%(ext)s` // Assure que le nom de fichier temporaire est sûr
     );
 
     // On utilise l'URL directe de la vidéo (via son ID) pour isoler les métadonnées
@@ -134,7 +191,7 @@ class DownloadHandler {
       ? `https://www.youtube.com/watch?v=${entry.id}`
       : this.url;
 
-    const prefix = `${String(index).padStart(3, '0')}_`;
+    const filePrefix = `${String(index).padStart(3, '0')}_${entry.id || ''}`; // Utilisé pour le nettoyage
     let finalDest = "";
 
     const ytDlpArgs = [
@@ -142,9 +199,6 @@ class DownloadHandler {
       '--ffmpeg-location', this.ffmpegPath,
       '-f', 'bestaudio/best',
       '-x',
-      '--keep-video',
-      '--write-thumbnail',
-      '--convert-thumbnails', 'jpg',
       '--parse-metadata', 'playlist_title:%(album)s',
       '--write-info-json',
       '--windows-filenames',
@@ -152,18 +206,37 @@ class DownloadHandler {
       '-o', rawAudioTemplate
     ];
 
+    // On ne télécharge la miniature par track QUE SI l'option pochette playlist n'est PAS activée.
+    // Cela évite de télécharger des images inutiles et la confusion quand les deux boutons sont cochés.
+    if (this.options.thumbnail && !this.options.usePlaylistThumbnail) {
+      ytDlpArgs.push('--write-thumbnail', '--convert-thumbnails', 'jpg');
+    }
+
     try {
       // 1. Téléchargement
       await this.runCommand(this.ytDlpPath, ytDlpArgs);
 
       const files = await fs.readdir(this.folder);
 
-      // Identification précise du fichier audio brut (on exclut les métadonnées JSON et les images)
-      const rawAudioFile = files.find(f => f.startsWith(prefix) && !f.endsWith('.mp3') && !f.endsWith('.json') && !['.jpg', '.webp', '.png'].some(ext => f.endsWith(ext)));
-      const infoJsonFile = files.find(f => f.startsWith(prefix) && f.endsWith('.info.json'));
-      const thumbFile = files.find(f => f.startsWith(prefix) && (f.endsWith('.jpg') || f.endsWith('.webp') || f.endsWith('.png')));
+      // Recherche des fichiers basée sur l'ID pour être 100% sûr de ne pas se tromper avec les titres
+      const currentId = entry.id || '';
+      const rawAudioFile = files.find(f => f.includes(currentId) && !f.endsWith('.mp3') && !f.endsWith('.json') && !['.jpg', '.webp', '.png'].some(ext => f.endsWith(ext)));
+      const infoJsonFile = files.find(f => f.includes(currentId) && f.endsWith('.info.json'));
 
       if (!rawAudioFile) throw new Error(`Fichier audio non trouvé pour ${videoUrl}`);
+
+      // Détermination de la miniature à utiliser :
+      // 1. Si "Pochette Playlist" est coché, on utilise EXCLUSIVEMENT celle-ci.
+      let actualThumbPath = null;
+      if (this.options.usePlaylistThumbnail) {
+        actualThumbPath = this.playlistCoverPath;
+      }
+      // 2. Sinon, si l'option "Pochette" générale est active, on cherche la miniature du titre.
+      else if (this.options.thumbnail) {
+        const thumbFile = files.find(f => f.includes(currentId) && (f.endsWith('.jpg') || f.endsWith('.webp') || f.endsWith('.png')));
+        if (thumbFile) actualThumbPath = path.join(this.folder, thumbFile);
+      }
+      console.log(`[Thumbnail Debug] Utilisation de la miniature: ${actualThumbPath}`);
 
       // 1.1 Métadonnées
       let metadata = {};
@@ -192,7 +265,8 @@ class DownloadHandler {
           if (this.options.artist) metadata.artist = fullMetadata.artist;
           if (this.options.date) metadata.date = fullMetadata.date;
           if (this.options.album) {
-            metadata.album = fullMetadata.album || playlistTitle;
+            // Si on utilise la pochette de la playlist, on uniformise l'album sur le titre de la playlist pour Apple Music
+            metadata.album = (this.options.usePlaylistThumbnail ? playlistTitle : fullMetadata.album) || playlistTitle;
           }
           if (this.options.track) metadata.track = fullMetadata.track;
 
@@ -227,12 +301,11 @@ class DownloadHandler {
       });
 
       // 3. Intégration Miniature (support JPG et WEBP)
-      if (thumbFile && this.options.thumbnail !== false) {
-        const fullThumbPath = path.join(this.folder, thumbFile);
+      if (actualThumbPath && this.options.thumbnail !== false) {
         const tempMp3Path = path.join(this.folder, `${mp3BaseName}_temp.mp3`);
 
         const ffmpegThumbArgs = [
-          '-y', '-i', fullMp3Path, '-i', fullThumbPath,
+          '-y', '-i', fullMp3Path, '-i', actualThumbPath,
           '-filter_complex', '[1:v]crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2[v]',
           '-map', '0:a', '-map', '[v]',
           '-map_metadata', '0', // Copie explicite de toutes les métadonnées (incl. paroles)
@@ -273,7 +346,7 @@ class DownloadHandler {
       // 4. Renommage final sans le préfixe
       const finalBaseName = (metadata.artist && metadata.title)
         ? `${metadata.artist} - ${metadata.title}`
-        : (metadata.title || mp3BaseName.substring(prefix.length));
+        : (metadata.title || mp3BaseName); // Utilise le titre nettoyé ou le nom de base si le titre est vide
 
       // Sécurisation du nom de fichier pour Windows (suppression des caractères interdits)
       const safeFinalName = finalBaseName.replace(/[\\/:*?"<>|]/g, '_').trim() + '.mp3';
@@ -283,12 +356,13 @@ class DownloadHandler {
 
       return true;
     } finally {
-      // 5. NETTOYAGE ABSOLU : On supprime TOUT ce qui commence par le préfixe (sauf le résultat final)
+      // 5. NETTOYAGE : basé sur l'ID pour ne pas supprimer les mauvais fichiers
       try {
+        const currentId = entry.id || ''; // Assure que currentId est défini
         const remaining = await fs.readdir(this.folder);
         for (const file of remaining) {
           const fullPath = path.join(this.folder, file);
-          if (file.startsWith(prefix) && fullPath !== finalDest) {
+          if (file.includes(currentId) && fullPath !== finalDest) {
             await this.safeUnlink(fullPath);
           }
         }

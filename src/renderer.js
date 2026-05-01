@@ -10,14 +10,16 @@ const previewMeta = document.getElementById('previewMeta');
 const menuBtn = document.getElementById('menuBtn');
 const optionsMenu = document.getElementById('optionsMenu');
 const versionLabel = document.getElementById('versionLabel');
+const playlistThumbOption = document.getElementById('playlistThumbOption');
 
 // Liste des IDs des cases à cocher pour faciliter la gestion
 const metadataCheckboxes = [
     'checkTitle', 'checkArtist', 'checkAlbum',
-    'checkDate', 'checkTrack', 'checkThumb', 'checkLyrics'
+    'checkDate', 'checkTrack', 'checkThumb', 'checkPlaylistThumb', 'checkLyrics'
 ];
 
 let debounceTimer; // Timer pour éviter trop de requêtes
+let isCurrentPlaylist = false; // Etat global pour la réactivité du menu
 // Regex unifiée pour éviter les duplications et incohérences
 // Supporte : youtube.com, youtu.be, shorts, playlists, embeds
 const YOUTUBE_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=|playlist\?list=|embed\/|shorts\/)?[a-zA-Z0-9_-]{11,}/;
@@ -32,6 +34,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // On met à jour le titre qui contient la version dans le README
         document.querySelector('h1').title = `v${version}`;
         if (versionLabel) versionLabel.textContent = `v${version}`;
+
+        // Cacher l'option playlist thumb par défaut au chargement
+        if (playlistThumbOption) playlistThumbOption.style.display = 'none';
+
     } catch (e) { console.error("Failed to get app version", e); }
 });
 
@@ -73,6 +79,24 @@ metadataCheckboxes.forEach(id => {
     document.getElementById(id)?.addEventListener('change', saveSettings);
 });
 
+// Mise à jour de la visibilité de la sous-option playlist
+function updatePlaylistOptionVisibility() {
+    if (!playlistThumbOption || !checkThumb) return;
+    playlistThumbOption.style.display = (isCurrentPlaylist && checkThumb.checked) ? 'flex' : 'none';
+}
+
+// Désactiver "Pochette Playlist" si "Pochette" est décoché
+const checkThumb = document.getElementById('checkThumb');
+const checkPlaylistThumb = document.getElementById('checkPlaylistThumb');
+if (checkThumb && checkPlaylistThumb) {
+    checkThumb.addEventListener('change', () => {
+        checkPlaylistThumb.disabled = !checkThumb.checked;
+        if (!checkThumb.checked) checkPlaylistThumb.checked = false;
+        updatePlaylistOptionVisibility();
+        saveSettings();
+    });
+}
+
 function updateStatus(text, type) {
     statusLabel.textContent = text;
     statusLabel.className = ''; // Réinitialise les classes
@@ -103,6 +127,8 @@ urlInput.addEventListener('input', () => {
     // Si le champ est vide, on cache la preview
     if (!url) {
         previewCard.style.display = 'none';
+        isCurrentPlaylist = false;
+        updatePlaylistOptionVisibility();
         return;
     }
 
@@ -116,19 +142,26 @@ urlInput.addEventListener('input', () => {
             previewThumb.src = ""; // Ou une image placeholder
             previewThumb.style.opacity = "0.5";
 
+            // On cache l'option par précaution en attendant le retour de l'info
+            isCurrentPlaylist = false;
+            updatePlaylistOptionVisibility();
+
             try {
                 const info = await window.api.getVideoInfo(url);
 
                 previewTitle.textContent = info.title;
-                if (info.isPlaylist) {
+                isCurrentPlaylist = !!info.isPlaylist;
+
+                if (isCurrentPlaylist) {
                     // Pour les playlists : juste le nombre de titres, propre et simple.
                     // Si info.count est null (via oEmbed), on affiche un texte générique
-                    previewMeta.textContent = (info.count !== null) ? `${info.count} titres` : "Playlist détectée";
+                    previewMeta.textContent = (info.count !== null && info.count > 0) ? `${info.count} titres` : "Playlist détectée";
                 } else {
                     // Gestion souple si la durée n'est pas dispo immédiatement
                     const durationText = info.duration ? ` • ${info.duration}` : "";
                     previewMeta.textContent = `${info.uploader}${durationText}`;
                 }
+                updatePlaylistOptionVisibility();
                 previewThumb.src = info.thumbnail;
                 previewThumb.style.opacity = "1";
 
@@ -166,7 +199,8 @@ downloadBtn.addEventListener('click', async () => {
         date: document.getElementById('checkDate')?.checked ?? true,
         track: document.getElementById('checkTrack')?.checked ?? true,
         thumbnail: document.getElementById('checkThumb')?.checked ?? true,
-        lyrics: document.getElementById('checkLyrics')?.checked ?? true
+        lyrics: document.getElementById('checkLyrics')?.checked ?? true,
+        usePlaylistThumbnail: document.getElementById('checkPlaylistThumb')?.checked ?? false
     };
 
     window.api.startDownload({ url, folder, options });
