@@ -1,4 +1,4 @@
-#  Audivex `v1.3.4`
+#  Audivex `v1.3.5`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -33,9 +33,9 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.4**
+**v1.3.5**
 
-* [Fix] Problème de mise à jour indisponible réglé
+* [Update] yt-dlp update
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
