@@ -14,7 +14,7 @@ const versionLabel = document.getElementById('versionLabel');
 // Liste des IDs des cases à cocher pour faciliter la gestion
 const metadataCheckboxes = [
     'checkTitle', 'checkArtist', 'checkAlbum',
-    'checkDate', 'checkTrack', 'checkThumb'
+    'checkDate', 'checkTrack', 'checkThumb', 'checkLyrics'
 ];
 
 let debounceTimer; // Timer pour éviter trop de requêtes
@@ -165,7 +165,8 @@ downloadBtn.addEventListener('click', async () => {
         album: document.getElementById('checkAlbum')?.checked ?? true,
         date: document.getElementById('checkDate')?.checked ?? true,
         track: document.getElementById('checkTrack')?.checked ?? true,
-        thumbnail: document.getElementById('checkThumb')?.checked ?? true
+        thumbnail: document.getElementById('checkThumb')?.checked ?? true,
+        lyrics: document.getElementById('checkLyrics')?.checked ?? true
     };
 
     window.api.startDownload({ url, folder, options });

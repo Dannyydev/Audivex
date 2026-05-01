@@ -48,6 +48,8 @@ async function processAudioChannels(inputPath, outputPath, metadata = {}, binPat
         if (metadata.album) ffmpegArgs.push('-metadata', `album=${metadata.album}`);
         if (metadata.track) ffmpegArgs.push('-metadata', `track=${metadata.track}`);
 
+        ffmpegArgs.push('-id3v2_version', '3'); // Force ID3v2.3 pour une meilleure compatibilité
+
         /**
          * Encodage MP3 final :
          * - libmp3lame : Encodeur de référence.
