@@ -208,7 +208,7 @@ class DownloadHandler {
 
     // On ne télécharge la miniature par track QUE SI l'option pochette playlist n'est PAS activée.
     // Cela évite de télécharger des images inutiles et la confusion quand les deux boutons sont cochés.
-    if (this.options.thumbnail && !this.options.usePlaylistThumbnail) {
+    if (this.options.thumbnail && (!isPlaylist || !this.options.usePlaylistThumbnail)) {
       ytDlpArgs.push('--write-thumbnail', '--convert-thumbnails', 'jpg');
     }
 
@@ -228,7 +228,7 @@ class DownloadHandler {
       // Détermination de la miniature à utiliser :
       // 1. Si "Pochette Playlist" est coché, on utilise EXCLUSIVEMENT celle-ci.
       let actualThumbPath = null;
-      if (this.options.usePlaylistThumbnail) {
+      if (isPlaylist && this.options.usePlaylistThumbnail && this.playlistCoverPath) {
         actualThumbPath = this.playlistCoverPath;
       }
       // 2. Sinon, si l'option "Pochette" générale est active, on cherche la miniature du titre.

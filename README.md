@@ -1,4 +1,4 @@
-#  Audivex `v1.3.6`
+#  Audivex `v1.3.7`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -10,7 +10,7 @@
 
 *   📂 **Gestion des Playlists** : Téléchargez des titres individuels ou des albums complets en un seul clic avec numérotation automatique.
 
-*   🏷️ **Métadonnées Personnalisables** : Un menu dédié vous permet de choisir précisément quels tags appliquer (Titre, Artiste, Album, Année, N° de piste et Pochette).
+*   🏷️ **Métadonnées Personnalisables** : Un menu dédié vous permet de choisir précisément quels tags appliquer (Titre, Artiste, Album, Année, N° de piste, pochette et Paroles !).
 
 *   🚀 **Prévisualisation Instantanée** : Visualisez les informations de la vidéo ou de la playlist dès que vous collez le lien.
 
@@ -33,12 +33,8 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.6**
-
-* [Update] Ajout des métadonnées de paroles ! 
-*   **Audivex** est maintenant capable d'ajouter les paroles de votre musique dans ces métadonnées pour pouvoir les visualiser dans vos lecteurs de musique
-
-* [Add] Ajout du bouton "Pochette Playlist"
+**v1.3.7**
+* [Fix] Bug de pochettes mal implémentées réglées.
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
