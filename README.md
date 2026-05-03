@@ -38,3 +38,6 @@
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
+
+<img width="935" height="681" alt="image" src="https://github.com/user-attachments/assets/28452d52-633c-45cc-a915-6f451bbfb419" />
+
