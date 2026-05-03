@@ -135,45 +135,40 @@ urlInput.addEventListener('input', () => {
     // On attend 300ms après la dernière frappe pour être réactif
     debounceTimer = setTimeout(async () => {
         if (YOUTUBE_REGEX.test(url)) {
-            // Affichage état chargement
-            previewCard.style.display = 'flex';
-            previewTitle.textContent = "Recherche des infos...";
-            previewMeta.textContent = "Veuillez patienter...";
-            previewThumb.src = ""; // Ou une image placeholder
-            previewThumb.style.opacity = "0.5";
-
-            // On cache l'option par précaution en attendant le retour de l'info
-            isCurrentPlaylist = false;
-            updatePlaylistOptionVisibility();
+            setPreviewState('loading');
 
             try {
                 const info = await window.api.getVideoInfo(url);
-
                 previewTitle.textContent = info.title;
                 isCurrentPlaylist = !!info.isPlaylist;
 
-                if (isCurrentPlaylist) {
-                    // Pour les playlists : juste le nombre de titres, propre et simple.
-                    // Si info.count est null (via oEmbed), on affiche un texte générique
-                    previewMeta.textContent = (info.count !== null && info.count > 0) ? `${info.count} titres` : "Playlist détectée";
-                } else {
-                    // Gestion souple si la durée n'est pas dispo immédiatement
-                    const durationText = info.duration ? ` • ${info.duration}` : "";
-                    previewMeta.textContent = `${info.uploader}${durationText}`;
-                }
+                previewMeta.textContent = isCurrentPlaylist
+                    ? (info.count ? `${info.count} titres` : "Playlist détectée")
+                    : `${info.uploader}${info.duration ? ` • ${info.duration}` : ""}`;
+
                 updatePlaylistOptionVisibility();
                 previewThumb.src = info.thumbnail;
                 previewThumb.style.opacity = "1";
-
             } catch (err) {
-                // Si erreur (ex: vidéo privée ou URL invalide), on affiche un message
-                previewTitle.textContent = "Vidéo non trouvée";
-                previewMeta.textContent = "Vérifiez le lien ou la visibilité de la vidéo.";
-                previewThumb.style.opacity = "0.5";
+                setPreviewState('error');
             }
         }
     }, 300);
 });
+
+function setPreviewState(state) {
+    previewCard.style.display = 'flex';
+    previewThumb.style.opacity = "0.5";
+    if (state === 'loading') {
+        previewTitle.textContent = "Recherche des infos...";
+        previewMeta.textContent = "Veuillez patienter...";
+        isCurrentPlaylist = false;
+        updatePlaylistOptionVisibility();
+    } else if (state === 'error') {
+        previewTitle.textContent = "Vidéo non trouvée";
+        previewMeta.textContent = "Vérifiez le lien ou la visibilité.";
+    }
+}
 
 downloadBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();

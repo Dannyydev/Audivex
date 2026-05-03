@@ -85,95 +85,72 @@ ipcMain.handle('select-folder', async () => {
   return result.filePaths[0];
 });
 
-// Récupération des métadonnées (Prévisualisation)
-ipcMain.handle('get-video-info', async (event, url) => {
+/** Helper for yt-dlp metadata extraction */
+async function getMetadataViaYtDlp(url) {
   const resourcePath = app.isPackaged
     ? path.join(process.resourcesPath, 'bin')
     : path.join(__dirname, '..', 'bin');
-
-  // Gestion extension selon l'OS
   const binaryName = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
   const ytDlpPath = path.join(resourcePath, binaryName);
 
+  const args = [url, '--dump-single-json', '--flat-playlist', '--no-warnings'];
+
   return new Promise((resolve, reject) => {
-    // --- FAST PATH: Tentative via oEmbed (YouTube API publique) ---
-    // C'est beaucoup plus rapide (ms) que de lancer un exécutable (sec).
-    // On vérifie que fetch est disponible (Node 18+ / Electron récent)
-    if ((url.includes('youtube.com') || url.includes('youtu.be')) && typeof fetch !== 'undefined') {
-      const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-
-      fetch(oembedUrl)
-        .then(res => {
-          if (!res.ok) throw new Error('oEmbed failed');
-          return res.json();
-        })
-        .then(data => {
-          const isPlaylist = url.includes('list=');
-
-          // Si c'est une playlist mais que oEmbed ne donne pas de miniature (fréquent sur les Mix),
-          // on lève une erreur pour passer au "Slow Path" (yt-dlp) qui ira chercher l'image de la 1ère vidéo.
-          if (isPlaylist && !data.thumbnail_url) throw new Error('Playlist sans miniature');
-
-          resolve({
-            isPlaylist: isPlaylist,
-            title: data.title,
-            thumbnail: data.thumbnail_url,
-            uploader: data.author_name,
-            // oEmbed ne donne pas la durée/nombre exact, mais c'est le prix de la vitesse
-            count: isPlaylist ? null : 0,
-            duration: null
-          });
-        })
-        .catch(() => {
-          // Si oEmbed échoue (ex: vidéo privée ou autre site), on continue vers yt-dlp (slow path)
-          runYtDlp();
+    execFile(ytDlpPath, args, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+      if (error) return reject(stderr || error.message);
+      try {
+        const data = JSON.parse(stdout);
+        const isPlaylist = data._type === 'playlist';
+        resolve({
+          isPlaylist,
+          title: data.title,
+          thumbnail: isPlaylist
+            ? (data.thumbnail || data.thumbnails?.slice(-1)[0]?.url || data.entries?.[0]?.thumbnail)
+            : data.thumbnail,
+          uploader: data.uploader || data.channel || '',
+          count: data.entries?.length || 0,
+          duration: data.duration_string || '--:--'
         });
-    } else {
-      runYtDlp();
-    }
-
-    function runYtDlp() {
-      const args = [
-        url,
-        '--dump-single-json',
-        '--flat-playlist',
-        '--no-warnings',
-        '--extractor-args', 'youtube:skip=dash,hls'
-      ];
-
-      execFile(ytDlpPath, args, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
-        if (error) {
-          reject(stderr || error.message || "Erreur inconnue de yt-dlp");
-          return;
-        }
-        try {
-          const data = JSON.parse(stdout);
-
-          if (data._type === 'playlist') {
-            resolve({
-              isPlaylist: true,
-              title: data.title,
-              thumbnail: data.thumbnail || (data.thumbnails && data.thumbnails.length ? data.thumbnails[data.thumbnails.length - 1].url : null) || (data.entries && data.entries.length ? data.entries[0].thumbnail : null),
-              uploader: data.uploader || data.channel || '',
-              count: data.entries ? data.entries.length : 0
-            });
-          } else {
-            resolve({
-              isPlaylist: false,
-              title: data.title,
-              thumbnail: data.thumbnail,
-              uploader: data.uploader || data.channel || '',
-              duration: data.duration_string || '--:--'
-            });
-          }
-        } catch (e) {
-          // Si le JSON est invalide ou incomplet
-          console.error("JSON Parse error:", e, stdout);
-          reject("Erreur de lecture des données de la vidéo (Format invalide).");
-        }
-      });
-    }
+      } catch (e) { reject("Format de données invalide"); }
+    });
   });
+}
+
+// Récupération des métadonnées (Prévisualisation)
+ipcMain.handle('get-video-info', async (event, url) => {
+  // --- FAST PATH: Tentative via oEmbed (YouTube API publique) ---
+  if ((url.includes('youtube.com') || url.includes('youtu.be'))) {
+    try {
+      const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+      const res = await fetch(oembedUrl);
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      const isPlaylist = url.includes('list=');
+
+      // Fallback vers yt-dlp si oEmbed manque de miniatures pour les playlists
+      if (isPlaylist && !data.thumbnail_url) throw new Error();
+
+      return {
+        isPlaylist,
+        title: data.title,
+        thumbnail: data.thumbnail_url,
+        uploader: data.author_name,
+        count: isPlaylist ? null : 0,
+        duration: null
+      };
+    } catch {
+      // Silence error, continue to slow path
+    }
+  }
+
+  // --- SLOW PATH: yt-dlp ---
+  try {
+    return await getMetadataViaYtDlp(url);
+  } catch (err) {
+    console.error("Metadata extraction failed:", err);
+    throw new Error("Impossible de récupérer les informations de la vidéo.");
+  }
 });
 
 ipcMain.on('start-download', (event, { url, folder, options }) => {

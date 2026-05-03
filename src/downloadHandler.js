@@ -62,16 +62,19 @@ class DownloadHandler {
         let thumbUrl = data.thumbnail;
 
         if (!thumbUrl && data.thumbnails && data.thumbnails.length > 0) {
-          thumbUrl = data.thumbnails.reduce((prev, curr) =>
-            ((prev.width || 0) * (prev.height || 0) > (curr.width || 0) * (curr.height || 0)) ? prev : curr
-          ).url;
+          // Tri pour obtenir la plus haute résolution possible
+          const sortedThumbs = [...data.thumbnails].sort((a, b) =>
+            ((b.width || 0) * (b.height || 0)) - ((a.width || 0) * (a.height || 0))
+          );
+          thumbUrl = sortedThumbs[0].url;
         }
 
         // Fallback pour YouTube Music / Playlists où la miniature est dans les entries
         if (!thumbUrl && data.entries && data.entries[0]) {
           const first = data.entries[0];
-          thumbUrl = first.thumbnail || (first.thumbnails && first.thumbnails.length > 0
-            ? first.thumbnails.reduce((prev, curr) => ((prev.width || 0) * (prev.height || 0) > (curr.width || 0) * (curr.height || 0)) ? prev : curr).url
+          const thumbs = first.thumbnails || [];
+          thumbUrl = first.thumbnail || (thumbs.length > 0
+            ? [...thumbs].sort((a, b) => ((b.width || 0) * (b.height || 0)) - ((a.width || 0) * (a.height || 0)))[0].url
             : null);
         }
 
@@ -105,11 +108,7 @@ class DownloadHandler {
 
       if (total === 0) throw new Error("Aucune vidéo trouvée.");
 
-      const message = total > 1
-        ? `Playlist de ${total} vidéos trouvée.`
-        : 'Vidéo trouvée.';
-
-      this.sendUpdate('status', message, '#0984e3');
+      this.sendUpdate('status', total > 1 ? `Playlist de ${total} vidéos trouvée.` : 'Vidéo trouvée.', '#0984e3');
 
       let completed = 0;
       const errors = [];
@@ -128,24 +127,17 @@ class DownloadHandler {
       for (const chunk of chunks) {
 
         const promises = chunk.map((entry, idx) => {
-
           const index = currentIndex + idx;
 
           return this.processItem(index, isPlaylist, entry, data.title)
             .then(() => {
-
               completed++;
-
               const percent = (completed / total) * 100;
-
               this.sendUpdate('progress', percent, completed, total);
-
             })
             .catch(err => {
-
               console.error(err);
               errors.push(err.message);
-
             });
 
         });
@@ -187,11 +179,8 @@ class DownloadHandler {
     );
 
     // On utilise l'URL directe de la vidéo (via son ID) pour isoler les métadonnées
-    const videoUrl = (isPlaylist && entry && entry.id)
-      ? `https://www.youtube.com/watch?v=${entry.id}`
-      : this.url;
+    const videoUrl = (isPlaylist && entry?.id) ? `https://www.youtube.com/watch?v=${entry.id}` : this.url;
 
-    const filePrefix = `${String(index).padStart(3, '0')}_${entry.id || ''}`; // Utilisé pour le nettoyage
     let finalDest = "";
 
     const ytDlpArgs = [
@@ -206,9 +195,10 @@ class DownloadHandler {
       '-o', rawAudioTemplate
     ];
 
-    // On ne télécharge la miniature par track QUE SI l'option pochette playlist n'est PAS activée.
-    // Cela évite de télécharger des images inutiles et la confusion quand les deux boutons sont cochés.
-    if (this.options.thumbnail && (!isPlaylist || !this.options.usePlaylistThumbnail)) {
+    // On télécharge la miniature par track si :
+    // 1. L'option thumbnail est cochée ET
+    // 2. (On n'est pas en mode playlist OU l'option usePlaylistThumbnail n'est pas cochée OU on n'a pas encore de pochette globale)
+    if (this.options.thumbnail && (!isPlaylist || !this.options.usePlaylistThumbnail || !this.playlistCoverPath)) {
       ytDlpArgs.push('--write-thumbnail', '--convert-thumbnails', 'jpg');
     }
 
@@ -226,61 +216,42 @@ class DownloadHandler {
       if (!rawAudioFile) throw new Error(`Fichier audio non trouvé pour ${videoUrl}`);
 
       // Détermination de la miniature à utiliser :
-      // 1. Si "Pochette Playlist" est coché, on utilise EXCLUSIVEMENT celle-ci.
-      let actualThumbPath = null;
-      if (isPlaylist && this.options.usePlaylistThumbnail && this.playlistCoverPath) {
-        actualThumbPath = this.playlistCoverPath;
-      }
-      // 2. Sinon, si l'option "Pochette" générale est active, on cherche la miniature du titre.
-      else if (this.options.thumbnail) {
-        const thumbFile = files.find(f => f.includes(currentId) && (f.endsWith('.jpg') || f.endsWith('.webp') || f.endsWith('.png')));
-        if (thumbFile) actualThumbPath = path.join(this.folder, thumbFile);
-      }
-      console.log(`[Thumbnail Debug] Utilisation de la miniature: ${actualThumbPath}`);
+      let actualThumbPath = this.resolveThumbnailPath(files, currentId, isPlaylist);
 
-      // 1.1 Métadonnées
-      let metadata = {};
-      let durationSec = 0;
+      // Stratégie de repli : si on voulait la pochette de playlist mais qu'elle manque,
+      // on utilise la pochette de ce titre comme nouvelle pochette "globale" pour toute la playlist.
+      if (isPlaylist && this.options.usePlaylistThumbnail && !this.playlistCoverPath && actualThumbPath) {
+        try {
+          const fallbackPath = path.join(this.folder, `playlist_cover_fallback_${Date.now()}.jpg`);
+          await fs.copyFile(actualThumbPath, fallbackPath);
+          this.playlistCoverPath = fallbackPath;
+          console.log(`[Thumbnail Fallback] Pochette du titre utilisée comme pochette de playlist : ${this.playlistCoverPath}`);
+          // On met à jour le chemin actuel pour utiliser ce nouveau fichier "global" stable
+          actualThumbPath = this.playlistCoverPath;
+        } catch (err) {
+          console.error("[Thumbnail Fallback] Erreur lors de la création du fallback :", err);
+        }
+      }
+
+      console.log(`[Thumbnail Debug] Utilisation de la miniature : ${actualThumbPath}`);
+
+      let metadata = { title: entry.title || '', artist: '' };
+
       if (infoJsonFile) {
         try {
-          const content = await fs.readFile(path.join(this.folder, infoJsonFile), 'utf8');
-          const info = JSON.parse(content);
-          const fullMetadata = {
-            title: info.title || '',
-            artist: info.uploader || info.channel || info.webpage_url_domain || '',
-            date: info.upload_date ? info.upload_date.substring(0, 4) : '',
-            album: info.playlist_title || playlistTitle || '',
-            track: info.playlist_index || index
-          };
-          durationSec = info.duration || 0;
-
-          // --- NETTOYAGE DES MÉTADONNÉES (LOGIQUE INTERNE REGEX) ---
-          const cleaned = this.cleanMetadata(fullMetadata.title, fullMetadata.artist);
-          fullMetadata.title = cleaned.title;
-          fullMetadata.artist = cleaned.artist;
-          console.log(`[Cleaner] Metadata final : ${fullMetadata.artist} - ${fullMetadata.title}`);
-
-          // Filtrage selon les options choisies par l'utilisateur
-          if (this.options.title) metadata.title = fullMetadata.title;
-          if (this.options.artist) metadata.artist = fullMetadata.artist;
-          if (this.options.date) metadata.date = fullMetadata.date;
-          if (this.options.album) {
-            // Si on utilise la pochette de la playlist, on uniformise l'album sur le titre de la playlist pour Apple Music
-            metadata.album = (this.options.usePlaylistThumbnail ? playlistTitle : fullMetadata.album) || playlistTitle;
-          }
-          if (this.options.track) metadata.track = fullMetadata.track;
+          metadata = await this.extractAndCleanMetadata(infoJsonFile, index, playlistTitle);
+          const raw = metadata._raw;
 
           console.log(`[Lyrics Debug] Option 'Paroles' activée: ${this.options.lyrics}`);
           // Récupération des paroles avant le traitement audio
-          if (this.options.lyrics && fullMetadata.title && fullMetadata.artist) {
-            console.log(`[Lyrics Debug] Tentative de récupération des paroles pour: "${fullMetadata.title}" par "${fullMetadata.artist}" (Durée: ${durationSec}s)`);
-            const lyricsData = await this.fetchLyricsData(fullMetadata.title, fullMetadata.artist, durationSec);
+          if (this.options.lyrics && raw.title && raw.artist) {
+            console.log(`[Lyrics Debug] Tentative de récupération des paroles pour: "${raw.title}" par "${raw.artist}" (Durée: ${raw.duration}s)`);
+            const lyricsData = await this.fetchLyricsData(raw.title, raw.artist, raw.duration);
             if (lyricsData) {
               console.log(`[Lyrics Debug] Paroles récupérées avec succès (Synced: ${!!lyricsData.synced}, Plain: ${!!lyricsData.plain}).`);
               // Si LRCLIB a trouvé un artiste plus précis, on le met à jour
-              if (lyricsData.artistName && lyricsData.artistName !== fullMetadata.artist && this.options.artist) {
+              if (lyricsData.artistName && lyricsData.artistName !== raw.artist && this.options.artist) {
                 metadata.artist = lyricsData.artistName;
-                console.log(`[Lyrics Debug] Artiste mis à jour via LRCLIB: ${lyricsData.artistName}`);
               }
               metadata.lyrics = lyricsData.synced || lyricsData.plain;
               metadata.plainLyrics = lyricsData.plain || lyricsData.synced;
@@ -306,23 +277,26 @@ class DownloadHandler {
 
         const ffmpegThumbArgs = [
           '-y', '-i', fullMp3Path, '-i', actualThumbPath,
-          '-filter_complex', '[1:v]crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2[v]',
+          // Crop au centre pour faire un carré + Redimensionnement HD 1000x1000 avec filtre Lanczos
+          '-filter_complex', '[1:v]crop=min(iw\\,ih):min(iw\\,ih),scale=1000:1000:flags=lanczos[v]',
           '-map', '0:a', '-map', '[v]',
           '-map_metadata', '0', // Copie explicite de toutes les métadonnées (incl. paroles)
-          '-c:a', 'copy', '-c:v', 'mjpeg', '-id3v2_version', '3',
+          '-c:a', 'copy', '-c:v', 'mjpeg', '-q:v', '1', '-id3v2_version', '3',
           '-metadata:s:v', 'title=Album cover', '-disposition:v:0', 'attached_pic'
-        ];
-        ffmpegThumbArgs.push(tempMp3Path);
+        ].concat(tempMp3Path);
 
         await this.runCommand(this.ffmpegPath, ffmpegThumbArgs);
         await fs.rename(tempMp3Path, fullMp3Path);
       }
 
       // 3.5 Injection finale des paroles (Passage dédié après tout traitement FFmpeg)
-      if (this.options.lyrics && metadata.lyrics) {
+      const hasLyrics = this.options.lyrics && metadata.lyrics;
+      if (hasLyrics) {
         console.log(`[Lyrics Debug] Injection finale des paroles via node-id3 (USLT + COMM)...`);
 
         const tags = {
+          artist: metadata.artist,
+          albumArtist: metadata.albumArtist || metadata.artist,
           // 'unsynchronisedLyrics' crée le vrai frame USLT pour Apple Music / Lecteur Windows
           unsynchronisedLyrics: {
             language: 'eng',
@@ -333,6 +307,8 @@ class DownloadHandler {
             language: 'eng',
             text: metadata.plainLyrics
           },
+          // Flag Compilation (TCMP) : aide Apple Music à regrouper si c'est une playlist variée
+          partOfCompilation: isPlaylist && !this.options.usePlaylistThumbnail,
           // Stockage de la version synchronisée pour les lecteurs qui le supportent
           userDefinedText: [
             { description: "LYRICS_SYNCED", value: metadata.lyrics }
@@ -370,15 +346,63 @@ class DownloadHandler {
     }
   }
 
+  /** Resolve which thumbnail to use based on options and availability */
+  resolveThumbnailPath(files, currentId, isPlaylist) {
+    if (isPlaylist && this.options.usePlaylistThumbnail && this.playlistCoverPath) {
+      return this.playlistCoverPath;
+    }
+    if (this.options.thumbnail) {
+      const thumbFile = files.find(f => f.includes(currentId) && ['.jpg', '.webp', '.png'].some(ext => f.endsWith(ext)));
+      return thumbFile ? path.join(this.folder, thumbFile) : null;
+    }
+    return null;
+  }
+
+  /** Logic to extract, clean and filter metadata based on user options */
+  async extractAndCleanMetadata(infoJsonFile, index, playlistTitle) {
+    const content = await fs.readFile(path.join(this.folder, infoJsonFile), 'utf8');
+    const info = JSON.parse(content);
+
+    const rawMeta = {
+      title: info.title || '',
+      artist: info.uploader || info.channel || info.webpage_url_domain || '',
+      date: info.upload_date ? info.upload_date.substring(0, 4) : '',
+      album: info.playlist_title || playlistTitle || '',
+      track: info.playlist_index || index,
+      duration: info.duration || 0
+    };
+
+    const cleaned = this.cleanMetadata(rawMeta.title, rawMeta.artist);
+
+    const metadata = {};
+    if (this.options.title) metadata.title = cleaned.title;
+    if (this.options.artist) metadata.artist = cleaned.artist;
+    if (this.options.artist) metadata.albumArtist = cleaned.artist; // Important pour Apple Music
+    if (this.options.date) metadata.date = rawMeta.date;
+    if (this.options.track) metadata.track = rawMeta.track;
+    if (this.options.album) {
+      metadata.album = (this.options.usePlaylistThumbnail ? playlistTitle : rawMeta.album) || playlistTitle;
+      if (this.options.usePlaylistThumbnail) metadata.albumArtist = playlistTitle; // Uniformise l'album
+    }
+
+    // On attache la durée et les versions nettoyées pour le traitement ultérieur (lyrics)
+    metadata._raw = { ...cleaned, duration: rawMeta.duration };
+
+    return metadata;
+  }
+
   async safeUnlink(filePath) {
-
-    await fs.unlink(filePath).catch(() => { });
-
+    try {
+      await fs.access(filePath);
+      await fs.unlink(filePath);
+    } catch {
+      // File doesn't exist or already removed
+    }
   }
 
   /**
    * Nettoie intelligemment le titre et l'artiste sans IA.
-   * Sépare "Artiste - Titre" et retire les termes parasites.
+   * Sépare "Artiste - Titre" et retire les termes parasites. 
    */
   cleanMetadata(rawTitle, rawArtist) {
     let title = rawTitle;
@@ -468,7 +492,6 @@ class DownloadHandler {
   }
 
   runCommand(command, args) {
-
     return new Promise((resolve, reject) => {
 
       console.log(`[Exec] Running: ${command}`, args); // Log the array directly
@@ -480,19 +503,14 @@ class DownloadHandler {
           windowsHide: true
         },
         (error, stdout, stderr) => {
-
           if (error) {
             reject(new Error(stderr || stdout || error.message));
             return;
           }
-
           resolve(stdout);
-
         }
       );
-
     });
-
   }
 
 }

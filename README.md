@@ -1,4 +1,4 @@
-#  Audivex `v1.3.7`
+#  Audivex `v1.3.8`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -33,8 +33,8 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.7**
-* [Fix] Bug de pochettes mal implémentées réglées.
+**v1.3.8**
+* [Fix] Bug de pochettes de playlist mal implémentées réglées.
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
