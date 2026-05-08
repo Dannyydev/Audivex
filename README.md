@@ -33,8 +33,8 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.8**
-* [Fix] Bug de pochettes de playlist mal implémentées réglées.
+**v1.3.9**
+* [Update] Mise a jour des dépendances d'Audivex
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
