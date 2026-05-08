@@ -77,7 +77,7 @@ async function sendTelemetry() {
     };
 
     // Remplace l'URL ci-dessous par l'URL que tu as copiée de Google Apps Script
-    await fetch('https://script.google.com/macros/s/AKfycbzr6-FEL-HZeYpDLt0FB5c1b746TzGnxbOEaeg-NHTy_xMMQppjskrLnqv9AXdA4PiE/exec', {
+    await fetch('https://script.google.com/macros/s/AKfycbylNHbdqXemM2ZxVN-KTreFcNkkgCGlcc2d0K2A8n__J2eACcd6ErGbPAZ68DHCDyvXcA/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(stats)
