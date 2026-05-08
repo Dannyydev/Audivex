@@ -1,4 +1,4 @@
-#  Audivex `v1.3.8`
+#  Audivex `v1.3.9`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -33,11 +33,10 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.9**
+**v1.4.0 (Prochaine)**
 * [Update] Mise a jour des dépendances d'Audivex
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
 
 <img width="935" height="681" alt="image" src="https://github.com/user-attachments/assets/28452d52-633c-45cc-a915-6f451bbfb419" />
-
