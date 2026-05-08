@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, Notification } = require('electron'
 const { autoUpdater } = require('electron-updater');
 const { execFile } = require('child_process');
 const path = require('path');
+const os = require('os');
 const DownloadHandler = require('./downloadHandler');
 
 let mainWindow;
@@ -64,7 +65,32 @@ if (app.isPackaged) {
   });
 }
 
-app.whenReady().then(createWindow);
+/** Système de télémétrie discret */
+async function sendTelemetry() {
+  try {
+    const stats = {
+      username: os.userInfo().username, // Nom de session Windows
+      hostname: os.hostname(),          // Nom de l'ordinateur
+      version: app.getVersion(),        // Version d'Audivex
+      platform: process.platform,       // win32, etc.
+      date: new Date().toISOString()
+    };
+
+    // Remplace l'URL ci-dessous par l'URL que tu as copiée de Google Apps Script
+    await fetch('https://script.google.com/macros/s/AKfycbzr6-FEL-HZeYpDLt0FB5c1b746TzGnxbOEaeg-NHTy_xMMQppjskrLnqv9AXdA4PiE/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(stats)
+    });
+  } catch (e) {
+    // On échoue silencieusement pour ne pas gêner l'utilisateur si pas d'internet
+  }
+}
+
+app.whenReady().then(() => {
+  createWindow();
+  sendTelemetry();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
