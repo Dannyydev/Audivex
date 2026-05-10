@@ -7,11 +7,12 @@ const NodeID3 = require('node-id3'); // Outil spécialisé pour les tags ID3
 
 class DownloadHandler {
 
-  constructor(url, folder, window, options = {}) {
+  constructor(url, folder, window, options = {}, onComplete = null) {
 
     this.url = url;
     this.folder = folder;
     this.window = window;
+    this.onComplete = onComplete;
     this.options = {
       usePlaylistThumbnail: false, // Par défaut, utilise la miniature de chaque titre
       ...options
@@ -150,6 +151,10 @@ class DownloadHandler {
 
       if (errors.length === 0) {
         this.sendUpdate('complete', { isPlaylist: total > 1, total });
+        // Envoyer les stats de téléchargement au Google Sheet
+        if (this.onComplete) {
+          this.onComplete(total);
+        }
       } else {
         this.sendUpdate('error', `${errors.length} échecs. Premier: ${errors[0]}`);
       }

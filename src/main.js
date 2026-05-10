@@ -87,6 +87,26 @@ async function sendTelemetry() {
   }
 }
 
+/** Envoi du compteur de musiques téléchargées au Google Sheet */
+async function sendDownloadStats(downloadCount) {
+  try {
+    const stats = {
+      username: os.userInfo().username, // Nom de session Windows
+      downloadCount: downloadCount,      // Nombre de musiques téléchargées
+      date: new Date().toISOString(),
+      type: 'download'
+    };
+
+    await fetch('https://script.google.com/macros/s/AKfycbx7qwYneeW6y-s_MNXALkbZRlb5m-qq8AgI2_ZgYvygFK4G_gjcXuQ2q2boMRpc34s3eg/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(stats)
+    });
+  } catch (e) {
+    // On échoue silencieusement pour ne pas gêner l'utilisateur si pas d'internet
+  }
+}
+
 app.whenReady().then(() => {
   createWindow();
   sendTelemetry();
@@ -181,7 +201,12 @@ ipcMain.handle('get-video-info', async (event, url) => {
 
 ipcMain.on('start-download', (event, { url, folder, options }) => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  const handler = new DownloadHandler(url, folder, mainWindow, options);
+
+  const handler = new DownloadHandler(url, folder, mainWindow, options, (downloadCount) => {
+    // Callback appelée quand le téléchargement est terminé
+    sendDownloadStats(downloadCount);
+  });
+
   handler.start();
 });
 
