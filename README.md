@@ -1,4 +1,4 @@
-#  Audivex `v1.3.10`
+#  Audivex `v1.3.11`
 
 **Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
 
@@ -33,8 +33,8 @@
 ---
 
 ### 📋 Dernières mises à jour
-**v1.3.10**
-* [Update] Mise a jour des dépendances d'Audivex
+**v1.3.11**
+* [Add] Ajout de données Supplémentaire afin de proposer une meilleure assistance sur le serveur discord.
 
 **Développeur** : Dannyydev 
 *© 2026 Dan&Tom - Tous droits réservés*
