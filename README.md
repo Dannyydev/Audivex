@@ -34,9 +34,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 | Moteur de téléchargement | yt-dlp |
 | Traitement audio | FFmpeg / ffprobe |
 | Interface | HTML, CSS |
-|Scriptage | JavaScript |
-
----
+| Scriptage | JavaScript |
 
 ---
 
