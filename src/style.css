@@ -366,6 +366,10 @@ h1 {
   color: #c94a4a;
 }
 
+#statusLabel.warning {
+  color: #e67e22;
+}
+
 #statusLabel.success {
   color: #6aa06a;
 }
@@ -381,4 +385,73 @@ h1 {
   font-size: 0.65em;
   color: #b0b0b5;
   margin-top: 0.2em;
+}
+
+/* Nouvelle carte pour le téléchargement terminé */
+.download-complete-card {
+  width: 90%;
+  margin: 1.25em auto 0;
+  /* Converti de 20px */
+  padding: 0.75em;
+  /* Converti de 12px */
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 1em;
+  /* Converti de 16px */
+  display: none;
+  /* Caché par défaut, affiché par JS */
+  align-items: center;
+  gap: 1em;
+  /* Converti de 15px */
+  text-align: left;
+  border: 1px solid rgba(0, 184, 148, 0.4);
+  /* Bordure verte pour le succès */
+  box-shadow: 0 4px 12px rgba(0, 184, 148, 0.1);
+  /* Ombre légère */
+  transition: all 0.3s ease-in-out;
+}
+
+.download-complete-thumb {
+  width: 5em;
+  height: 3.75em;
+  object-fit: cover;
+  border-radius: 0.5em;
+  background-color: #ddd;
+}
+
+.download-complete-info {
+  flex-grow: 1;
+}
+
+.download-complete-title {
+  font-size: 1em;
+  /* Légèrement plus grand que le titre de prévisualisation */
+  font-weight: 700;
+  margin: 0 0 0.2em 0;
+  color: #2c2c2e;
+}
+
+.download-complete-artist {
+  font-size: 0.9em;
+  color: #6a6a6a;
+  margin: 0;
+}
+
+/* Style spécifique pour les cartes d'échec */
+.failure-card {
+  border: 1px solid rgba(201, 74, 74, 0.3);
+  background: rgba(255, 235, 235, 0.5);
+  margin-bottom: 0.8em;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

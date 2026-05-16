@@ -10,6 +10,11 @@ const previewMeta = document.getElementById('previewMeta');
 const menuBtn = document.getElementById('menuBtn');
 const optionsMenu = document.getElementById('optionsMenu');
 const versionLabel = document.getElementById('versionLabel');
+const downloadCompleteCard = document.getElementById('downloadCompleteCard');
+const downloadCompleteThumb = document.getElementById('downloadCompleteThumb');
+const downloadCompleteTitle = document.getElementById('downloadCompleteTitle');
+const downloadCompleteArtist = document.getElementById('downloadCompleteArtist');
+const failedDownloadsContainer = document.getElementById('failedDownloadsContainer');
 const playlistThumbOption = document.getElementById('playlistThumbOption');
 
 // Liste des IDs des cases à cocher pour faciliter la gestion
@@ -28,6 +33,9 @@ const YOUTUBE_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/(watch\?
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Charger les réglages sauvegardés
     loadSettings();
+
+    // Cacher la carte de téléchargement terminé au démarrage
+    if (downloadCompleteCard) downloadCompleteCard.style.display = 'none';
 
     try {
         const version = await window.api.getAppVersion();
@@ -181,10 +189,13 @@ downloadBtn.addEventListener('click', async () => {
     const folder = await window.api.selectFolder();
     if (!folder) return;
 
-    downloadBtn.disabled = true;
+    // On masque le bouton pour éviter les doubles clics et les bugs de processus
+    downloadBtn.style.display = 'none';
     downloadBtn.classList.add('loading');
     downloadBtn.querySelector('span').textContent = 'Téléchargement...';
     progressBar.style.width = '0%';
+    // On vide les anciens échecs
+    if (failedDownloadsContainer) failedDownloadsContainer.innerHTML = '';
 
     // Récupération des options de métadonnées
     const options = {
@@ -206,6 +217,7 @@ window.api.onStatus((text, color) => {
     let type = 'info';
     if (color === '#e74c3c') type = 'error';
     else if (color === '#00b894') type = 'success';
+    else if (color === '#e67e22') type = 'warning';
     updateStatus(text, type);
 });
 
@@ -214,11 +226,49 @@ window.api.onProgress((percent, completed, total) => {
     updateStatus(`Téléchargé : ${completed}/${total}`, 'info');
 });
 
-window.api.onComplete((result) => {
+window.api.onComplete((result) => { // result contient maintenant lastDownloaded
     progressBar.style.width = '100%';
-    const text = result.isPlaylist
-        ? `Téléchargement de la playlist terminé ! (${result.total} vidéos).`
-        : "Téléchargement terminé ! 🎧";
+    if (failedDownloadsContainer) failedDownloadsContainer.innerHTML = '';
+
+    let text = "";
+    if (result.isPlaylist) {
+        text = `Téléchargement de la playlist terminé ! (${result.total} vidéos).`;
+        if (downloadCompleteCard) downloadCompleteCard.style.display = 'none'; // Cacher la carte pour les playlists
+    } else {
+        text = "Téléchargement terminé ! 🎧";
+        if (result.lastDownloaded && downloadCompleteCard) {
+            downloadCompleteTitle.textContent = result.lastDownloaded.title;
+            downloadCompleteArtist.textContent = result.lastDownloaded.artist;
+            // Note: Afficher la miniature locale nécessiterait une gestion spécifique (ex: base64)
+            // downloadCompleteThumb.src = result.lastDownloaded.thumbnail;
+            downloadCompleteCard.style.display = 'flex'; // Afficher la carte
+        } else if (downloadCompleteCard) {
+            downloadCompleteCard.style.display = 'none';
+        }
+    }
+
+    // Affichage des échecs s'il y en a
+    if (result.failures && result.failures.length > 0 && failedDownloadsContainer) {
+        const title = document.createElement('h4');
+        title.textContent = "Échecs de téléchargement :";
+        title.style.margin = "1.5em 0 0.5em 0";
+        title.style.fontSize = "0.9em";
+        failedDownloadsContainer.appendChild(title);
+
+        result.failures.forEach(fail => {
+            const card = document.createElement('div');
+            card.className = 'preview-card failure-card';
+            card.innerHTML = `
+                <img class="preview-thumb" src="${fail.thumbnail}" alt="" onerror="this.src='../assets/icon.png'">
+                <div class="preview-info">
+                    <p class="preview-title">${fail.title}</p>
+                    <p class="preview-meta">Vidéo #${fail.index} • Non disponible</p>
+                </div>
+            `;
+            failedDownloadsContainer.appendChild(card);
+        });
+    }
+
     updateStatus(text, 'success');
 });
 
@@ -227,7 +277,7 @@ window.api.onError((msg) => {
 });
 
 window.api.onFinish(() => {
-    downloadBtn.disabled = false;
+    downloadBtn.style.display = 'flex';
     downloadBtn.classList.remove('loading');
     downloadBtn.querySelector('span').textContent = 'Télécharger';
 });

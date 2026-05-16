@@ -1,42 +1,51 @@
-#  Audivex `v1.3.11`
+# Audivex `v1.3.12`
 
-**Une expérience de téléchargement fluide, élégante et intelligente pour vos contenus YouTube.**
+Une application de bureau dédiée au téléchargement et à la conversion de contenus YouTube en audio haute qualité.
 
-## ✨ Points Forts
+## Fonctionnalités
 
-*   📱 **Interface simple et intuitive** : profitez d’une interface claire, rapide et agréable dès la première utilisation.
+**Interface utilisateur**
+Conçue pour une prise en main immédiate : collez un lien, configurez vos préférences, lancez le téléchargement. Une prévisualisation des métadonnées s'affiche dès la saisie de l'URL.
 
-*   🎼 **Qualité Audio Premium** : Conversion automatique en MP3 (VBR Q0) avec un traitement intelligent des canaux (Mono, Stéréo et Downmix spatialisé pour les sources multicanaux).
+**Qualité audio**
+Conversion automatique en MP3 (VBR Q0) avec gestion intelligente des canaux : mono, stéréo, et downmix spatialisé pour les sources multicanaux.
 
-*   📂 **Gestion des Playlists** : Téléchargez des titres individuels ou des albums complets en un seul clic avec numérotation automatique.
+**Gestion des playlists**
+Téléchargement de titres individuels ou de playlists complètes en un clic, avec numérotation automatique des pistes.
 
-*   🏷️ **Métadonnées Personnalisables** : Un menu dédié vous permet de choisir précisément quels tags appliquer (Titre, Artiste, Album, Année, N° de piste, pochette et Paroles !).
+**Métadonnées**
+Un menu dédié permet de configurer précisément les tags appliqués à chaque fichier : titre, artiste, album, année, numéro de piste, pochette d'album et paroles synchronisées.
 
-*   🚀 **Prévisualisation Instantanée** : Visualisez les informations de la vidéo ou de la playlist dès que vous collez le lien.
+**Mises à jour**
+Système de mise à jour intégré pour maintenir l'application à jour automatiquement.
 
-*   🔄 **Mises à jour Automatiques** : Système intégré pour garantir que vous disposez toujours des dernières versions d' `Audivex`.
+## Utilisation
 
-## 🛠️ Utilisation
+1. Copiez l'URL d'une vidéo ou d'une playlist YouTube.
+2. Collez-la dans le champ de saisie (ou utilisez le bouton presse-papiers).
+3. Ajustez les préférences de métadonnées si nécessaire via le menu de configuration.
+4. Sélectionnez votre dossier de destination et lancez le téléchargement.
 
-1.  **Copier** : Récupérez l'URL d'une vidéo ou d'une playlist sur YouTube.
-2.  **Coller** : Insérez le lien dans le champ de saisie (le bouton "presse-papier" peut le faire pour vous).
-3.  **Configurer** : Ajustez vos préférences de métadonnées via le menu sandwich si nécessaire.
-4.  **Télécharger** : Sélectionnez votre dossier de destination et laissez l'application s'occuper du reste.
+## Stack technique
 
-## 💻 Pile Technologique
-
-*   **Framework** : Electron
-*   **Moteur de téléchargement** : `yt-dlp`
-*   **Traitement Audio** : `FFmpeg` & `ffprobe`
-*   **Interface** : HTML5, CSS3 (Variables modernes, Flexbox, Grid)
+| Composant | Technologie |
+|---|---|
+| Framework | Electron |
+| Moteur de téléchargement | yt-dlp |
+| Traitement audio | FFmpeg / ffprobe |
+| Interface | HTML5, CSS3 (Flexbox, Grid, variables CSS) |
 
 ---
 
-### 📋 Dernières mises à jour
-**v1.3.11**
-* [Add] Ajout de données Supplémentaire afin de proposer une meilleure assistance sur le serveur discord.
+## Journal des modifications
 
-**Développeur** : Dannyydev 
-*© 2026 Dan&Tom - Tous droits réservés*
+### v1.3.12
 
-<img width="935" height="681" alt="image" src="https://github.com/user-attachments/assets/28452d52-633c-45cc-a915-6f451bbfb419" />
+- **Résilience des playlists** — Les vidéos supprimées ou privées n'interrompent plus le téléchargement en cours.
+- **Rapport d'erreurs** — Les vidéos en échec sont listées en fin de traitement sous forme de cartes avec miniature.
+
+---
+
+*Développé par Dannyydev — © 2026 Dan&Tom. Tous droits réservés.*
+https://audivex.ct.ws/
+https://discord.gg/VGDB9ceV33

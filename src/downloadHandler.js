@@ -7,12 +7,13 @@ const NodeID3 = require('node-id3'); // Outil spécialisé pour les tags ID3
 
 class DownloadHandler {
 
-  constructor(url, folder, window, options = {}, onComplete = null) {
+  constructor(url, folder, window, options = {}, onComplete = null, onItemSuccess = null) {
 
     this.url = url;
     this.folder = folder;
     this.window = window;
     this.onComplete = onComplete;
+    this.onItemSuccess = onItemSuccess;
     this.options = {
       usePlaylistThumbnail: false, // Par défaut, utilise la miniature de chaque titre
       ...options
@@ -48,7 +49,9 @@ class DownloadHandler {
         this.url,
         '--dump-single-json',
         '--flat-playlist',
-        '--yes-playlist'
+        '--yes-playlist',
+        '--ignore-errors',
+        '--no-warnings'
       ]);
 
       const data = JSON.parse(info);
@@ -111,8 +114,9 @@ class DownloadHandler {
 
       this.sendUpdate('status', total > 1 ? `Playlist de ${total} vidéos trouvée.` : 'Vidéo trouvée.', '#0984e3');
 
-      let completed = 0;
-      const errors = [];
+      let processed = 0;
+      let successCount = 0; // Compteur de succès
+      const failures = [];
 
       const CONCURRENCY_LIMIT = 8;
       const chunks = [];
@@ -122,6 +126,7 @@ class DownloadHandler {
       }
 
       this.sendUpdate('progress', 0, 0, total);
+      let lastSuccessfulMetadata = null; // Pour stocker les infos du dernier téléchargement réussi (si unique)
 
       let currentIndex = 1;
 
@@ -131,14 +136,25 @@ class DownloadHandler {
           const index = currentIndex + idx;
 
           return this.processItem(index, isPlaylist, entry, data.title)
-            .then(() => {
-              completed++;
-              const percent = (completed / total) * 100;
-              this.sendUpdate('progress', percent, completed, total);
+            .then((itemResult) => { // Capture les métadonnées retournées par processItem
+              successCount++;
+              if (this.onItemSuccess) this.onItemSuccess(); // Signalement en temps réel
+              if (!isPlaylist || total === 1) { // Si c'est un téléchargement unique ou une playlist d'un seul élément
+                lastSuccessfulMetadata = itemResult;
+              }
             })
             .catch(err => {
-              console.error(err);
-              errors.push(err.message);
+              console.error(`[Process Error] ${entry.title || entry.id}:`, err);
+              failures.push({
+                title: entry.title || entry.id || `Vidéo #${index}`,
+                index: index,
+                thumbnail: entry.thumbnail || (entry.thumbnails && entry.thumbnails[0]?.url) || ''
+              });
+            })
+            .finally(() => {
+              processed++;
+              const percent = (processed / total) * 100;
+              this.sendUpdate('progress', percent, processed, total);
             });
 
         });
@@ -149,14 +165,18 @@ class DownloadHandler {
 
       }
 
-      if (errors.length === 0) {
-        this.sendUpdate('complete', { isPlaylist: total > 1, total });
-        // Envoyer les stats de téléchargement au Google Sheet
-        if (this.onComplete) {
-          this.onComplete(total);
-        }
+      if (failures.length === 0) {
+        this.sendUpdate('complete', { isPlaylist: total > 1, total: successCount, lastDownloaded: lastSuccessfulMetadata, failures: [] });
       } else {
-        this.sendUpdate('error', `${errors.length} échecs. Premier: ${errors[0]}`);
+        if (successCount > 0) {
+          // Succès partiel : on informe sans bloquer visuellement la fin
+          const msg = `${successCount} terminés, ${failures.length} échec(s).`;
+          this.sendUpdate('status', msg, '#e67e22'); // Couleur orange (warning)
+          this.sendUpdate('complete', { isPlaylist: total > 1, total: successCount, lastDownloaded: lastSuccessfulMetadata, failures: failures });
+        } else {
+          // Échec total
+          this.sendUpdate('error', `${failures.length} échecs. Premier : ${failures[0].title}`);
+        }
       }
 
     } catch (e) {
@@ -335,7 +355,12 @@ class DownloadHandler {
 
       await fs.rename(fullMp3Path, finalDest);
 
-      return true;
+      return {
+        title: metadata.title,
+        artist: metadata.artist,
+        thumbnail: actualThumbPath, // Chemin local de la miniature
+        finalDest: finalDest // Chemin complet du fichier MP3 final
+      };
     } finally {
       // 5. NETTOYAGE : basé sur l'ID pour ne pas supprimer les mauvais fichiers
       try {

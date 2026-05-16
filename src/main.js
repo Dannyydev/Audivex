@@ -202,9 +202,9 @@ ipcMain.handle('get-video-info', async (event, url) => {
 ipcMain.on('start-download', (event, { url, folder, options }) => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
 
-  const handler = new DownloadHandler(url, folder, mainWindow, options, (downloadCount) => {
-    // Callback appelée quand le téléchargement est terminé
-    sendDownloadStats(downloadCount);
+  // On passe null pour onComplete et on utilise le nouveau callback onItemSuccess
+  const handler = new DownloadHandler(url, folder, mainWindow, options, null, () => {
+    sendDownloadStats(1); // Envoi +1 en temps réel à chaque succès
   });
 
   handler.start();
