@@ -33,7 +33,10 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 | Framework | Electron |
 | Moteur de téléchargement | yt-dlp |
 | Traitement audio | FFmpeg / ffprobe |
-| Interface | HTML5, CSS3 (Flexbox, Grid, variables CSS) |
+| Interface | HTML, CSS |
+|Scriptage | JavaScript |
+
+---
 
 ---
 
