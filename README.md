@@ -1,4 +1,4 @@
-# Audivex `v1.3.12`
+# Audivex `v1.3.13`
 
 Une application de bureau dédiée au téléchargement et à la conversion de contenus YouTube en audio haute qualité.
 
@@ -40,12 +40,12 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ## Journal des modifications
 
-### v1.3.12
+### v1.3.13
 
-- **Résilience des playlists** — Les vidéos supprimées ou privées n'interrompent plus le téléchargement en cours.
-- **Rapport d'erreurs** — Les vidéos en échec sont listées en fin de traitement sous forme de cartes avec miniature.
+- **Mise à jour des dépendances** — La dépendance `yt-dlp` a été mise à jour afin de supporter les nouveau protocoles `Youtube`.
 
----
+
+
 
 *Développé par Dannyydev — © 2026 Dan&Tom. Tous droits réservés.*
 https://audivex.ct.ws/
