@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Notification, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { execFile } = require('child_process');
 const path = require('path');
@@ -129,6 +129,11 @@ ipcMain.handle('select-folder', async () => {
     properties: ['openDirectory']
   });
   return result.filePaths[0];
+});
+
+// Gestionnaire pour ouvrir les liens externes
+ipcMain.on('open-external', (event, url) => {
+  shell.openExternal(url);
 });
 
 /** Helper for yt-dlp metadata extraction */

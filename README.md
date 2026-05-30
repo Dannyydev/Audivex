@@ -40,13 +40,12 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ## Journal des modifications
 
-### v1.3.13
+### v1.3.14 -- 30/05/2026
 
-- **Mise à jour des dépendances** — La dépendance `yt-dlp` a été mise à jour afin de supporter les nouveau protocoles `Youtube`.
-
-
+- **Mise à jour** — La dépendance `yt-dlp` a été mise à jour afin de supporter les nouveau protocoles `Youtube`.
+* **Ajout** — Deux nouveaux boutons ont été ajoutés afin d’accéder directement au serveur Discord ainsi qu’au site internet.
 
 
 *Développé par Dannyydev — © 2026 Dan&Tom. Tous droits réservés.*
-https://audivex.ct.ws/
+https://audivex.fr/
 https://discord.gg/VGDB9ceV33

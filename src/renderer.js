@@ -46,6 +46,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cacher l'option playlist thumb par défaut au chargement
         if (playlistThumbOption) playlistThumbOption.style.display = 'none';
 
+        // Initialisation des boutons sociaux ici pour être sûr que le DOM est prêt
+        document.querySelectorAll('.social-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const url = btn.getAttribute('href');
+                window.api.openExternal(url);
+            });
+        });
+
     } catch (e) { console.error("Failed to get app version", e); }
 });
 

@@ -12,5 +12,7 @@ contextBridge.exposeInMainWorld('api', {
   // Mises à jour
   onUpdateMsg: (callback) => ipcRenderer.on('update-msg', (_, text, type) => callback(text, type)),
   // Infos App
-  getAppVersion: () => ipcRenderer.invoke('get-app-version')
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  // Ouverture de liens externes dans le navigateur par défaut
+  openExternal: (url) => ipcRenderer.send('open-external', url)
 });
