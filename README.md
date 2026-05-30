@@ -47,5 +47,4 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 
 *Développé par Dannyydev — © 2026 Dan&Tom. Tous droits réservés.*
-https://audivex.fr/
-https://discord.gg/VGDB9ceV33
+[ Site Officiel](https://audivex.fr/) || [Discord](https://discord.gg/VGDB9ceV33)
