@@ -1,4 +1,4 @@
-# Audivex `v1.3.13`
+# Audivex `v1.3.14`
 
 Une application de bureau dédiée au téléchargement et à la conversion de contenus YouTube en audio haute qualité.
 
