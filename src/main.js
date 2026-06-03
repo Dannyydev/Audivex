@@ -46,19 +46,19 @@ if (app.isPackaged) {
   autoUpdater.on('checking-for-update', () => sendUpdateMsg('Reherche des mises à jour...', 'info'));
 
   autoUpdater.on('update-available', (info) => {
-    sendUpdateMsg(`Version (v${info.version}) disponible et est en cours de téléchargement`, 'info');
+    sendUpdateMsg(`Audivex (v${info.version}) est disponible et en cours de téléchargement`, 'info');
   });
 
   autoUpdater.on('error', (err) => {
     console.error('Update error:', err);
-    sendUpdateMsg('Erreur de mise à jour. Vérifiez votre connexion ou contactez le support.', 'error');
+    sendUpdateMsg('Erreur lors de mise à jour. Vérifiez votre connexion et réessayez (Code 1)', 'error');
   });
 
   autoUpdater.on('update-downloaded', (info) => {
     sendUpdateMsg('Mise à jour téléchargée. Redémarrez l\'application pour l\'appliquer.', 'success');
     const notif = new Notification({
-      title: `La version v${info.version} est prête`,
-      body: `Cliquez ici pour installer la mise à jour et passer sur Audivex.`,
+      title: `v${info.version}`,
+      body: `Cliquez ici pour mettre à jour`,
     });
     notif.on('click', () => autoUpdater.quitAndInstall());
     notif.show();
