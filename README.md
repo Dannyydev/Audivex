@@ -40,7 +40,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ## Journal des modifications
 
-### v1.3.15 -- 30/05/2026
+### v1.3.15 -- 03/06/2026
 
 * **Ajout** — Ajout de code erreur afin d'obtenir la meilleure assistance possible sur le support [Discord](https://discord.gg/VGDB9ceV33)
 
