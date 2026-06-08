@@ -38,7 +38,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ---
 
-## Journal des modifications
+## Dernières modifications
 
 ### v1.3.16 -- 07/06/2026
 
@@ -50,4 +50,4 @@ Développé par Dannyydev
 
 © 2026 Dan&Tom. Tous droits réservés.
 
-[ Site Officiel](https://audivex.fr/) [Discord](https://discord.gg/VGDB9ceV33)
+[Audivex](https://audivex.fr/) [Discord](https://discord.gg/VGDB9ceV33)
