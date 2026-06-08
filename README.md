@@ -44,6 +44,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 * **Mise à jour** — Mise à jour de **Yt-dlp** afin de supporter les nouveau protocoles **Youtube**
 
+---
 
 Développé par Dannyydev
 
