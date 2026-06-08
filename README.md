@@ -45,6 +45,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 * **Mise à jour** — Mise à jour de **Yt-dlp** afin de supporter les nouveau protocoles **Youtube**
 
 
-*Développé par Dannyydev — © 2026 Dan&Tom. Tous droits réservés.*
+Développé par Dannyydev
+© 2026 Dan&Tom. Tous droits réservés.
 
 [ Site Officiel](https://audivex.fr/) [Discord](https://discord.gg/VGDB9ceV33)
