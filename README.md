@@ -42,7 +42,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ### v1.3.17 -- 09/06/2026
 
-* **Ajout** — Il est désormais obligatoire d’accepter les [conditions d’utilisation](https://audivex.fr/Conditions) et d’avoir lu la politique de [confidentialité](https://audivex.fr/Confidentialite) avant de pouvoir utiliser Audivex.
+* **Ajout** — Il est désormais obligatoire d’accepter les [Conditions d’Utilisation](https://audivex.fr/Conditions) et d’avoir lu la politique de [Confidentialité](https://audivex.fr/Confidentialite) avant de pouvoir utiliser Audivex.
 
 ---
 
