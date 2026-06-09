@@ -46,6 +46,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cacher l'option playlist thumb par défaut au chargement
         if (playlistThumbOption) playlistThumbOption.style.display = 'none';
 
+        // --- Gestion de l'overlay TOS ---
+        const tosOverlay = document.getElementById('tosOverlay');
+        const checkPrivacy = document.getElementById('checkPrivacy');
+        const checkConditions = document.getElementById('checkConditions');
+        const tosBtn = document.getElementById('tosBtn');
+        const acceptedVersion = localStorage.getItem('acceptedVersion');
+
+        // Si la version enregistrée diffère de la version actuelle, on affiche l'overlay
+        if (acceptedVersion !== version) {
+            tosOverlay.style.display = 'flex';
+
+            const updateTOSBtn = () => {
+                tosBtn.disabled = !(checkPrivacy.checked && checkConditions.checked);
+            };
+
+            checkPrivacy.addEventListener('change', updateTOSBtn);
+            checkConditions.addEventListener('change', updateTOSBtn);
+
+            tosBtn.addEventListener('click', () => {
+                localStorage.setItem('acceptedVersion', version);
+                tosOverlay.style.display = 'none';
+            });
+
+            tosOverlay.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', (e) => { e.preventDefault(); window.api.openExternal(link.href); });
+            });
+        }
+
         // Initialisation des boutons sociaux ici pour être sûr que le DOM est prêt
         document.querySelectorAll('.social-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {

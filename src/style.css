@@ -511,3 +511,67 @@ h1 {
   /* Grossissement de l'icône réduit */
   transform: scale(1.1);
 }
+
+/* Overlay TOS */
+.tos-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(248, 249, 250, 0.85);
+  backdrop-filter: blur(35px);
+  z-index: 2000;
+  display: none;
+  /* Affiché par JS */
+  align-items: center;
+  justify-content: center;
+  padding: 1.5em;
+}
+
+.tos-content {
+  background: white;
+  padding: 2.5em;
+  border-radius: 1.5em;
+  max-width: 28em;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.tos-content h2 {
+  margin-top: 0;
+  font-size: 1.8em;
+  color: #2c2c2e;
+}
+
+.tos-checks {
+  text-align: left;
+  margin: 2em 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2em;
+}
+
+.tos-link {
+  color: #1281ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+#tosBtn {
+  width: 100%;
+  padding: 1em;
+  border-radius: 999px;
+  border: none;
+  background: #1281ff;
+  color: white;
+  font-weight: 600;
+  font-size: 1em;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+#tosBtn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}

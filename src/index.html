@@ -13,6 +13,27 @@
 </head>
 
 <body>
+  <!-- Overlay de validation des conditions (TOS) -->
+  <div id="tosOverlay" class="tos-overlay">
+    <div class="tos-content">
+      <h2>Bienvenue sur Audivex !</h2>
+      <p>Pour continuer, veuillez confirmer avoir pris connaissance de nos documents légaux.<br>Vous devez avoir lu les
+        conditions d'utilisation et la politique de confidentialité afin de comprendre les autorisations et les règles
+        encadrant l'utilisation d'Audivex.</p>
+      <div class="tos-checks">
+        <label>
+          <input type="checkbox" id="checkPrivacy" />
+          J'ai lu la <a href="https://audivex.fr/Confidentialite" class="tos-link">politique de confidentialité</a>
+        </label>
+        <label>
+          <input type="checkbox" id="checkConditions" />
+          J'accepte les <a href="https://audivex.fr/Conditions" class="tos-link">conditions d'utilisation</a>
+        </label>
+      </div>
+      <button id="tosBtn" disabled>Valider et continuer</button>
+    </div>
+  </div>
+
   <div class="container">
     <!-- Menu Sandwich -->
     <div class="menu-wrapper">
