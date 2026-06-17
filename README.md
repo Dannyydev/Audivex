@@ -44,7 +44,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 * **Ajout** — Nouveau menu **Paramètres** permettant de personnaliser la langue et de gérer les mises à jour automatiques.
 
-* **Ajout** — Prise en charge de l'anglais dans le menu de sélection des langues.
+* **Ajout** — Prise en charge de l'anglais et de l'espagnol dans le menu de sélection des langues.
 
 * **Ajout** — Il est désormais possible d’activer ou de désactiver les mises à jour automatiques.
 
