@@ -1,4 +1,4 @@
-# Audivex `v1.3.17`
+# Audivex `v1.3.18`
 
 Une application de bureau dédiée au téléchargement et à la conversion de contenus YouTube en audio haute qualité.
 
@@ -40,9 +40,15 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ## Dernières modifications
 
-### v1.3.17 -- 09/06/2026
+### `v1.3.18 -- 17/06/2026`
 
-* **Ajout** — Il est désormais obligatoire d’accepter les [Conditions d’Utilisation](https://audivex.fr/Conditions) et d’avoir lu la politique de [Confidentialité](https://audivex.fr/Confidentialite) avant de pouvoir utiliser Audivex.
+* **Ajout** — Nouveau menu **Paramètres** permettant de personnaliser la langue et de gérer les mises à jour automatiques.
+
+* **Ajout** — Prise en charge de l'anglais dans le menu de sélection des langues.
+
+* **Ajout** — Il est désormais possible d’activer ou de désactiver les mises à jour automatiques.
+
+* **Mise à jour** — Le moteur `yt-dlp` a été mis à jour afin d'améliorer la stabilité et la compatibilité avec les dernières modifications de YouTube.
 
 ---
 

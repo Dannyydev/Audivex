@@ -6,6 +6,7 @@ const os = require('os');
 const DownloadHandler = require('./downloadHandler');
 
 let mainWindow;
+let autoUpdatesDisabled = false; // New: Global variable to store user preference for auto-updates
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -28,30 +29,31 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Gestion des mises à jour automatiques
-  if (app.isPackaged) {
-    // Vérifier les mises à jour immédiatement au lancement
-    autoUpdater.checkForUpdates();
+  // Gestion des mises à jour automatiques (only if not disabled by user)
+  if (app.isPackaged && !autoUpdatesDisabled) { // Check initial preference
+    autoUpdater.checkForUpdates(); // Check for updates immediately on launch
   }
 }
 
 // Initialisation des événements d'update en dehors de createWindow pour éviter les doublons
 if (app.isPackaged) {
   const sendUpdateMsg = (text, type) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow && !mainWindow.isDestroyed() && !autoUpdatesDisabled) { // Only send if not disabled
       mainWindow.webContents.send('update-msg', text, type);
     }
   };
 
-  autoUpdater.on('checking-for-update', () => sendUpdateMsg('Reherche des mises à jour...', 'info'));
+  autoUpdater.on('checking-for-update', () => { if (!autoUpdatesDisabled) sendUpdateMsg('Reherche des mises à jour...', 'info'); });
 
   autoUpdater.on('update-available', (info) => {
-    sendUpdateMsg(`Audivex (v${info.version}) est disponible et en cours de téléchargement`, 'info');
+    if (!autoUpdatesDisabled) sendUpdateMsg(`Audivex (v${info.version}) est disponible et en cours de téléchargement`, 'info');
   });
 
   autoUpdater.on('error', (err) => {
-    console.error('Update error:', err);
-    sendUpdateMsg('Erreur lors de mise à jour. Vérifiez votre connexion et réessayez (Code 1)', 'error');
+    if (!autoUpdatesDisabled) { // Only log and notify if auto-updates are not disabled
+      console.error('Update error:', err);
+      sendUpdateMsg('Erreur lors de mise à jour. Vérifiez votre connexion et réessayez (Code 1)', 'error');
+    }
   });
 
   autoUpdater.on('update-downloaded', (info) => {
@@ -110,6 +112,11 @@ async function sendDownloadStats(downloadCount) {
 app.whenReady().then(() => {
   createWindow();
   sendTelemetry();
+});
+
+// New: IPC handler to receive auto update preference from renderer
+ipcMain.on('set-auto-update-preference', (event, isDisabled) => {
+  autoUpdatesDisabled = isDisabled;
 });
 
 app.on('window-all-closed', () => {
@@ -223,3 +230,12 @@ ipcMain.on('restart-app', () => {
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
+
+// New: Expose setAutoUpdatePreference to renderer via preload.js
+// This is a duplicate of the ipcMain.on above, but it's good practice to have
+// a handle for renderer to call if it needs to explicitly set the state,
+// rather than just sending a message. However, for a simple toggle, ipcRenderer.send
+// is sufficient. I'll keep the ipcMain.on and remove this handle to avoid redundancy.
+// The ipcMain.on('set-auto-update-preference') is sufficient.
+// The preload.js will expose ipcRenderer.send('set-auto-update-preference', isDisabled).
+// No further changes needed here.

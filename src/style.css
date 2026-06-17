@@ -45,7 +45,7 @@ body::before {
   max-width: 32em;
   /* Utiliser em ici est le secret : le container suit la taille du texte */
 
-  padding: 3.125em 2.5em;
+  padding: 2.5em 2.5em 2em;
   /* Converti de 50px 40px */
 
   background: rgba(255, 255, 255, 0.45);
@@ -181,17 +181,35 @@ h1 {
   margin: 0;
 }
 
-/* Menu Sandwich & Options */
-.menu-wrapper {
+/* Positionnement des contrôles haut */
+.top-left-controls {
   position: absolute;
   top: 1.25em;
-  /* Converti de 20px */
-  right: 1.25em;
-  /* Converti de 20px */
+  left: 1.25em;
   z-index: 100;
 }
 
-#menuBtn {
+.top-right-controls {
+  position: absolute;
+  top: 1.25em;
+  right: 1.25em;
+  z-index: 100;
+}
+
+/* Flou du container principal quand la modale est ouverte */
+.container.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+  transform: scale(0.98);
+  transition: all 0.3s ease;
+}
+
+.control-container {
+  position: relative;
+}
+
+#menuBtn,
+#settingsBtn {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -205,19 +223,21 @@ h1 {
   justify-content: center;
 }
 
-#menuBtn:hover {
+#menuBtn:hover,
+#settingsBtn:hover {
   background: rgba(0, 0, 0, 0.05);
   color: #1281ff;
 }
 
-#menuBtn svg {
+#menuBtn svg,
+#settingsBtn svg {
   width: 1.5em;
   /* Converti de 24px */
   height: 1.5em;
   /* Converti de 24px */
 }
 
-.options-menu {
+.control-menu {
   display: none;
   position: absolute;
   top: 2.8em;
@@ -239,11 +259,150 @@ h1 {
   text-align: left;
 }
 
-.options-menu.show {
+.control-menu.show {
+  /* Common show class */
   display: flex;
 }
 
-.options-menu label {
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  padding: 2em;
+  border-radius: 1.5em;
+  width: 100%;
+  max-width: 28em;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2em;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3em;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 2em;
+  color: #8a8a8f;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-modal:hover {
+  color: #c94a4a;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  padding: 2em;
+  border-radius: 1.5em;
+  width: 100%;
+  max-width: 28em;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2em;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3em;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 2em;
+  color: #8a8a8f;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-modal:hover {
+  color: #c94a4a;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.control-menu label {
   font-size: 0.85em;
   color: #4a4a4a;
   cursor: pointer;
@@ -252,11 +411,109 @@ h1 {
   gap: 0.6em;
 }
 
-.options-menu .sub-option {
+.settings-option {
+  /* Specific style for settings options */
+  font-size: 0.85em;
+  /* Same font size as options-menu label */
+  color: #4a4a4a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.language-select {
+  padding: 0.4em 0.8em;
+  border-radius: 0.5em;
+  border: 1px solid rgba(200, 200, 210, 0.4);
+  background: white;
+  font-size: 0.9em;
+  color: #4a4a4a;
+  outline: none;
+  cursor: pointer;
+}
+
+.control-menu .sub-option {
   margin-left: 1.5em;
   font-size: 0.8em;
   border-left: 2px solid rgba(18, 129, 255, 0.3);
   padding-left: 0.5em;
+}
+
+.settings-option .option-text {
+  flex-grow: 1;
+  /* Allows text to take available space, pushing toggle to the right */
+}
+
+/* Toggle switch styles */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 2.5em;
+  /* 40px */
+  height: 1.4em;
+  /* 22px */
+  /* margin-right: 0.5em; */
+  /* Removed as option-text handles spacing */
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 1em;
+  /* 16px */
+  width: 1em;
+  /* 16px */
+  left: 0.2em;
+  /* 4px */
+  bottom: 0.2em;
+  /* 4px */
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked+.slider {
+  background-color: #1281ff;
+}
+
+input:focus+.slider {
+  box-shadow: 0 0 1px #1281ff;
+}
+
+input:checked+.slider:before {
+  -webkit-transform: translateX(1.1em);
+  /* (2.5em - 1em - 0.2em*2) = 1.1em */
+  -ms-transform: translateX(1.1em);
+  transform: translateX(1.1em);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 1.4em;
+  /* 22px */
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 
 /* bouton */
@@ -459,7 +716,7 @@ h1 {
 /* Boutons Sociaux Glassmorphism */
 .social-wrapper {
   display: inline-flex;
-  margin-top: 1.2em;
+  margin-top: 0.8em;
   gap: 0.8em;
   /* Un peu plus d'espace entre les boutons isolés */
   z-index: 10;
@@ -557,7 +814,8 @@ h1 {
   font-weight: 600;
 }
 
-#tosBtn {
+#tosBtn,
+.primary-btn {
   width: 100%;
   padding: 1em;
   border-radius: 999px;
@@ -570,7 +828,8 @@ h1 {
   transition: 0.2s;
 }
 
-#tosBtn:disabled {
+#tosBtn:disabled,
+.primary-btn:disabled {
   background: #cbd5e0;
   cursor: not-allowed;
   opacity: 0.7;

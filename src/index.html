@@ -13,6 +13,25 @@
 </head>
 
 <body>
+  <!-- Overlay de sélection de langue initiale (Style identique aux TOS) -->
+  <div id="languageSelectionOverlay" class="tos-overlay">
+    <div class="tos-content">
+      <h2 id="initialLanguageSelectionTitle">Choose your language</h2>
+      <p id="initialLanguageSelectionDescription">Please select the interface language for Audivex.</p>
+      <div class="tos-checks" style="align-items: center;">
+        <div class="settings-option" style="width: 100%; justify-content: center; gap: 1em; margin: 1em 0;">
+          <span class="option-text" id="initialLanguageLabel" style="flex-grow: 0;">Interface language</span>
+          <select id="initialLanguageSelect" class="language-select">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+      </div>
+      <button id="confirmLanguageBtn" class="primary-btn">Continue</button>
+    </div>
+  </div>
+
   <!-- Overlay de validation des conditions (TOS) -->
   <div id="tosOverlay" class="tos-overlay">
     <div class="tos-content">
@@ -23,11 +42,13 @@
       <div class="tos-checks">
         <label>
           <input type="checkbox" id="checkPrivacy" />
-          J'ai lu la <a href="https://audivex.fr/Confidentialite" class="tos-link">politique de confidentialité</a>
+          <span id="labelPrivacy">J'ai lu la <a href="https://audivex.fr/Confidentialite" class="tos-link">politique de
+              confidentialité</a></span>
         </label>
         <label>
           <input type="checkbox" id="checkConditions" />
-          J'accepte les <a href="https://audivex.fr/Conditions" class="tos-link">conditions d'utilisation</a>
+          <span id="labelConditions">J'accepte les <a href="https://audivex.fr/Conditions" class="tos-link">conditions
+              d'utilisation</a></span>
         </label>
       </div>
       <button id="tosBtn" disabled>Valider et continuer</button>
@@ -35,26 +56,42 @@
   </div>
 
   <div class="container">
-    <!-- Menu Sandwich -->
-    <div class="menu-wrapper">
-      <button id="menuBtn" title="Options de métadonnées">
+    <!-- Bouton Paramètres à gauche -->
+    <div class="top-left-controls">
+      <button id="settingsBtn" title="Paramètres généraux">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class="feather feather-settings">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
       </button>
-      <div id="optionsMenu" class="options-menu">
-        <label><input type="checkbox" id="checkTitle" checked /> Titre</label>
-        <label><input type="checkbox" id="checkArtist" checked /> Artiste</label>
-        <label><input type="checkbox" id="checkAlbum" checked /> Album</label>
-        <label><input type="checkbox" id="checkDate" checked /> Année</label>
-        <label><input type="checkbox" id="checkTrack" checked /> N° Piste</label>
-        <label><input type="checkbox" id="checkThumb" checked /> Pochette</label>
-        <label id="playlistThumbOption" class="sub-option"><input type="checkbox" id="checkPlaylistThumb" /> Pochette
-          Playlist</label>
-        <label><input type="checkbox" id="checkLyrics" checked /> Paroles</label>
+    </div>
+
+    <!-- Menu Sandwich à droite -->
+    <div class="top-right-controls">
+      <!-- Menu Sandwich (Métadonnées) -->
+      <div class="control-container">
+        <button id="menuBtn" title="Options de métadonnées">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div id="optionsMenu" class="control-menu">
+          <label><input type="checkbox" id="checkTitle" checked /> Titre</label>
+          <label><input type="checkbox" id="checkArtist" checked /> Artiste</label>
+          <label><input type="checkbox" id="checkAlbum" checked /> Album</label>
+          <label><input type="checkbox" id="checkDate" checked /> Année</label>
+          <label><input type="checkbox" id="checkTrack" checked /> N° Piste</label>
+          <label><input type="checkbox" id="checkThumb" checked /> Pochette</label>
+          <label id="playlistThumbOption" class="sub-option"><input type="checkbox" id="checkPlaylistThumb" /> Pochette
+            Playlist</label>
+          <label><input type="checkbox" id="checkLyrics" checked /> Paroles</label>
+        </div>
       </div>
     </div>
 
@@ -125,9 +162,37 @@
       </a>
     </div>
   </div>
+
+  <!-- Fenêtre Modale des Paramètres -->
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Paramètres d'Audivex</h3>
+        <button id="closeSettings" class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-option">
+          <span class="option-text">Rechercher les mises à jour automatiquement</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="disableAutoUpdates">
+            <span class="slider round"></span>
+          </label>
+        </div>
+        <div class="settings-option">
+          <span class="option-text">Langue de l'interface</span>
+          <select id="languageSelect" class="language-select">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+        <div class="settings-option">
+          <!-- Placeholder for future settings -->
+        </div>
+        <!-- On pourra ajouter d'autres options ici plus tard -->
+      </div>
+    </div>
   </div>
 
   <script src="./renderer.js"></script>
 </body>
-
-</html>
