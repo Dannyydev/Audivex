@@ -197,10 +197,13 @@ class DownloadHandler {
   }
 
   async processItem(index, isPlaylist, entry, playlistTitle) {
+    const isMp4 = this.options.format === 'mp4';
+    
     // Utilisation impérative de %(id)s pour éviter les erreurs de système de fichiers Windows
+    const extTemplate = isMp4 ? 'mp4' : '%(ext)s';
     const rawAudioTemplate = path.join(
       this.folder,
-      `${String(index).padStart(3, '0')}_%(id)s.%(ext)s` // Assure que le nom de fichier temporaire est sûr
+      `${String(index).padStart(3, '0')}_%(id)s.${extTemplate}`
     );
 
     // On utilise l'URL directe de la vidéo (via son ID) pour isoler les métadonnées
@@ -211,20 +214,31 @@ class DownloadHandler {
     const ytDlpArgs = [
       videoUrl,
       '--ffmpeg-location', this.ffmpegPath,
-      '-f', 'bestaudio/best',
-      '-x',
-      '--parse-metadata', 'playlist_title:%(album)s',
-      '--write-info-json',
-      '--windows-filenames',
-      '--no-mtime',
-      '-o', rawAudioTemplate
     ];
 
-    // On télécharge la miniature par track si :
-    // 1. L'option thumbnail est cochée ET
-    // 2. (On n'est pas en mode playlist OU l'option usePlaylistThumbnail n'est pas cochée OU on n'a pas encore de pochette globale)
-    if (this.options.thumbnail && (!isPlaylist || !this.options.usePlaylistThumbnail || !this.playlistCoverPath)) {
-      ytDlpArgs.push('--write-thumbnail', '--convert-thumbnails', 'jpg');
+    if (isMp4) {
+      const q = this.options.videoQuality || 'best';
+      const formatStr = q === 'best' ? 'bestvideo+bestaudio/best' : `bestvideo[height<=${q}]+bestaudio/best`;
+      ytDlpArgs.push('-f', formatStr, '--merge-output-format', 'mp4');
+      ytDlpArgs.push('--windows-filenames', '--no-mtime', '-o', rawAudioTemplate);
+      
+      if (this.options.subtitles) {
+        ytDlpArgs.push('--write-subs', '--write-auto-subs', '--sub-langs', 'all,-live_chat', '--embed-subs');
+      }
+    } else {
+      ytDlpArgs.push(
+        '-f', 'bestaudio/best',
+        '-x',
+        '--parse-metadata', 'playlist_title:%(album)s',
+        '--write-info-json',
+        '--windows-filenames',
+        '--no-mtime',
+        '-o', rawAudioTemplate
+      );
+      // On télécharge la miniature par track si l'option est cochée
+      if (this.options.thumbnail && (!isPlaylist || !this.options.usePlaylistThumbnail || !this.playlistCoverPath)) {
+        ytDlpArgs.push('--write-thumbnail', '--convert-thumbnails', 'jpg');
+      }
     }
 
     try {
@@ -232,135 +246,155 @@ class DownloadHandler {
       await this.runCommand(this.ytDlpPath, ytDlpArgs);
 
       const files = await fs.readdir(this.folder);
-
-      // Recherche des fichiers basée sur l'ID pour être 100% sûr de ne pas se tromper avec les titres
       const currentId = entry.id || '';
-      const rawAudioFile = files.find(f => f.includes(currentId) && !f.endsWith('.mp3') && !f.endsWith('.json') && !['.jpg', '.webp', '.png'].some(ext => f.endsWith(ext)));
-      const infoJsonFile = files.find(f => f.includes(currentId) && f.endsWith('.info.json'));
 
-      if (!rawAudioFile) throw new Error(`Fichier audio non trouvé pour ${videoUrl}`);
+      if (isMp4) {
+        const mp4File = files.find(f => f.includes(currentId) && f.endsWith('.mp4'));
+        if (!mp4File) throw new Error(`Fichier vidéo non trouvé pour ${videoUrl}`);
 
-      // Détermination de la miniature à utiliser :
-      let actualThumbPath = this.resolveThumbnailPath(files, currentId, isPlaylist);
-
-      // Stratégie de repli : si on voulait la pochette de playlist mais qu'elle manque,
-      // on utilise la pochette de ce titre comme nouvelle pochette "globale" pour toute la playlist.
-      if (isPlaylist && this.options.usePlaylistThumbnail && !this.playlistCoverPath && actualThumbPath) {
-        try {
-          const fallbackPath = path.join(this.folder, `playlist_cover_fallback_${Date.now()}.jpg`);
-          await fs.copyFile(actualThumbPath, fallbackPath);
-          this.playlistCoverPath = fallbackPath;
-          console.log(`[Thumbnail Fallback] Pochette du titre utilisée comme pochette de playlist : ${this.playlistCoverPath}`);
-          // On met à jour le chemin actuel pour utiliser ce nouveau fichier "global" stable
-          actualThumbPath = this.playlistCoverPath;
-        } catch (err) {
-          console.error("[Thumbnail Fallback] Erreur lors de la création du fallback :", err);
-        }
-      }
-
-      console.log(`[Thumbnail Debug] Utilisation de la miniature : ${actualThumbPath}`);
-
-      let metadata = { title: entry.title || '', artist: '' };
-
-      if (infoJsonFile) {
-        try {
-          metadata = await this.extractAndCleanMetadata(infoJsonFile, index, playlistTitle);
-          const raw = metadata._raw;
-
-          console.log(`[Lyrics Debug] Option 'Paroles' activée: ${this.options.lyrics}`);
-          // Récupération des paroles avant le traitement audio
-          if (this.options.lyrics && raw.title && raw.artist) {
-            console.log(`[Lyrics Debug] Tentative de récupération des paroles pour: "${raw.title}" par "${raw.artist}" (Durée: ${raw.duration}s)`);
-            const lyricsData = await this.fetchLyricsData(raw.title, raw.artist, raw.duration);
-            if (lyricsData) {
-              console.log(`[Lyrics Debug] Paroles récupérées avec succès (Synced: ${!!lyricsData.synced}, Plain: ${!!lyricsData.plain}).`);
-              // Si LRCLIB a trouvé un artiste plus précis, on le met à jour
-              if (lyricsData.artistName && lyricsData.artistName !== raw.artist && this.options.artist) {
-                metadata.artist = lyricsData.artistName;
-              }
-              metadata.lyrics = lyricsData.synced || lyricsData.plain;
-              metadata.plainLyrics = lyricsData.plain || lyricsData.synced;
-            } else { console.log(`[Lyrics Debug] Aucune parole trouvée.`); }
-          }
-
-        } catch (err) { console.error("Metadata error:", err); }
-      }
-
-      const fullRawPath = path.join(this.folder, rawAudioFile);
-      const mp3BaseName = path.basename(rawAudioFile, path.extname(rawAudioFile));
-      const fullMp3Path = path.join(this.folder, `${mp3BaseName}.mp3`);
-
-      // 2. Conversion MP3 + Canaux + Métadonnées
-      await processAudioChannels(fullRawPath, fullMp3Path, metadata, {
-        ffmpegPath: this.ffmpegPath,
-        ffprobePath: this.ffprobePath
-      });
-
-      // 3. Intégration Miniature (support JPG et WEBP)
-      if (actualThumbPath && this.options.thumbnail !== false) {
-        const tempMp3Path = path.join(this.folder, `${mp3BaseName}_temp.mp3`);
-
-        const ffmpegThumbArgs = [
-          '-y', '-i', fullMp3Path, '-i', actualThumbPath,
-          // Crop au centre pour faire un carré + Redimensionnement HD 1000x1000 avec filtre Lanczos
-          '-filter_complex', '[1:v]crop=min(iw\\,ih):min(iw\\,ih),scale=1000:1000:flags=lanczos[v]',
-          '-map', '0:a', '-map', '[v]',
-          '-map_metadata', '0', // Copie explicite de toutes les métadonnées (incl. paroles)
-          '-c:a', 'copy', '-c:v', 'mjpeg', '-q:v', '1', '-id3v2_version', '3',
-          '-metadata:s:v', 'title=Album cover', '-disposition:v:0', 'attached_pic'
-        ].concat(tempMp3Path);
-
-        await this.runCommand(this.ffmpegPath, ffmpegThumbArgs);
-        await fs.rename(tempMp3Path, fullMp3Path);
-      }
-
-      // 3.5 Injection finale des paroles (Passage dédié après tout traitement FFmpeg)
-      const hasLyrics = this.options.lyrics && metadata.lyrics;
-      if (hasLyrics) {
-        console.log(`[Lyrics Debug] Injection finale des paroles via node-id3 (USLT + COMM)...`);
-
-        const tags = {
-          artist: metadata.artist,
-          albumArtist: metadata.albumArtist || metadata.artist,
-          // 'unsynchronisedLyrics' crée le vrai frame USLT pour Apple Music / Lecteur Windows
-          unsynchronisedLyrics: {
-            language: 'eng',
-            text: metadata.plainLyrics
-          },
-          // On double dans 'comment' pour que ce soit visible dans Windows (Propriétés > Détails)
-          comment: {
-            language: 'eng',
-            text: metadata.plainLyrics
-          },
-          // Flag Compilation (TCMP) : aide Apple Music à regrouper si c'est une playlist variée
-          partOfCompilation: isPlaylist && !this.options.usePlaylistThumbnail,
-          // Stockage de la version synchronisée pour les lecteurs qui le supportent
-          userDefinedText: [
-            { description: "LYRICS_SYNCED", value: metadata.lyrics }
-          ]
+        const fullRawPath = path.join(this.folder, mp4File);
+        
+        // Nettoyage basique des noms
+        const rawTitle = entry.title || `Vidéo ${index}`;
+        const rawArtist = entry.uploader || entry.channel || '';
+        const cleaned = this.cleanMetadata(rawTitle, rawArtist);
+        
+        const finalBaseName = (cleaned.artist && cleaned.title)
+          ? `${cleaned.artist} - ${cleaned.title}`
+          : (cleaned.title || `Vidéo ${index}`);
+        
+        const safeFinalName = finalBaseName.replace(/[\\/:*?"<>|]/g, '_').trim() + '.mp4';
+        finalDest = path.join(this.folder, safeFinalName);
+        
+        await fs.rename(fullRawPath, finalDest);
+        
+        return {
+          title: cleaned.title,
+          artist: cleaned.artist,
+          thumbnail: null,
+          finalDest: finalDest
         };
 
-        const success = NodeID3.update(tags, fullMp3Path);
-        console.log(`[Lyrics Debug] Résultat de l'injection node-id3: ${success ? 'Succès' : 'Échec'}`);
+      } else {
+        // --- LOGIQUE MP3 ---
+        const rawAudioFile = files.find(f => f.includes(currentId) && !f.endsWith('.mp3') && !f.endsWith('.json') && !['.jpg', '.webp', '.png'].some(ext => f.endsWith(ext)));
+        const infoJsonFile = files.find(f => f.includes(currentId) && f.endsWith('.info.json'));
+
+        if (!rawAudioFile) throw new Error(`Fichier audio non trouvé pour ${videoUrl}`);
+
+        // Détermination de la miniature à utiliser :
+        let actualThumbPath = this.resolveThumbnailPath(files, currentId, isPlaylist);
+
+        // Stratégie de repli pour la miniature de playlist
+        if (isPlaylist && this.options.usePlaylistThumbnail && !this.playlistCoverPath && actualThumbPath) {
+          try {
+            const fallbackPath = path.join(this.folder, `playlist_cover_fallback_${Date.now()}.jpg`);
+            await fs.copyFile(actualThumbPath, fallbackPath);
+            this.playlistCoverPath = fallbackPath;
+            console.log(`[Thumbnail Fallback] Pochette du titre utilisée comme pochette de playlist : ${this.playlistCoverPath}`);
+            actualThumbPath = this.playlistCoverPath;
+          } catch (err) {
+            console.error("[Thumbnail Fallback] Erreur lors de la création du fallback :", err);
+          }
+        }
+
+        console.log(`[Thumbnail Debug] Utilisation de la miniature : ${actualThumbPath}`);
+
+        let metadata = { title: entry.title || '', artist: '' };
+
+        if (infoJsonFile) {
+          try {
+            metadata = await this.extractAndCleanMetadata(infoJsonFile, index, playlistTitle);
+            const raw = metadata._raw;
+
+            console.log(`[Lyrics Debug] Option 'Paroles' activée: ${this.options.lyrics}`);
+            if (this.options.lyrics && raw.title && raw.artist) {
+              console.log(`[Lyrics Debug] Tentative de récupération des paroles pour: "${raw.title}" par "${raw.artist}" (Durée: ${raw.duration}s)`);
+              const lyricsData = await this.fetchLyricsData(raw.title, raw.artist, raw.duration);
+              if (lyricsData) {
+                console.log(`[Lyrics Debug] Paroles récupérées avec succès (Synced: ${!!lyricsData.synced}, Plain: ${!!lyricsData.plain}).`);
+                if (lyricsData.artistName && lyricsData.artistName !== raw.artist && this.options.artist) {
+                  metadata.artist = lyricsData.artistName;
+                }
+                metadata.lyrics = lyricsData.synced || lyricsData.plain;
+                metadata.plainLyrics = lyricsData.plain || lyricsData.synced;
+              } else { console.log(`[Lyrics Debug] Aucune parole trouvée.`); }
+            }
+
+          } catch (err) { console.error("Metadata error:", err); }
+        }
+
+        const fullRawPath = path.join(this.folder, rawAudioFile);
+        const mp3BaseName = path.basename(rawAudioFile, path.extname(rawAudioFile));
+        const fullMp3Path = path.join(this.folder, `${mp3BaseName}.mp3`);
+
+        // 2. Conversion MP3 + Canaux + Métadonnées
+        await processAudioChannels(fullRawPath, fullMp3Path, metadata, {
+          ffmpegPath: this.ffmpegPath,
+          ffprobePath: this.ffprobePath
+        });
+
+        // 3. Intégration Miniature (support JPG et WEBP)
+        if (actualThumbPath && this.options.thumbnail !== false) {
+          const tempMp3Path = path.join(this.folder, `${mp3BaseName}_temp.mp3`);
+
+          const ffmpegThumbArgs = [
+            '-y', '-i', fullMp3Path, '-i', actualThumbPath,
+            // Crop au centre pour faire un carré + Redimensionnement HD 1000x1000 avec filtre Lanczos
+            '-filter_complex', '[1:v]crop=min(iw\\,ih):min(iw\\,ih),scale=1000:1000:flags=lanczos[v]',
+            '-map', '0:a', '-map', '[v]',
+            '-map_metadata', '0', // Copie explicite de toutes les métadonnées (incl. paroles)
+            '-c:a', 'copy', '-c:v', 'mjpeg', '-q:v', '1', '-id3v2_version', '3',
+            '-metadata:s:v', 'title=Album cover', '-disposition:v:0', 'attached_pic'
+          ].concat(tempMp3Path);
+
+          await this.runCommand(this.ffmpegPath, ffmpegThumbArgs);
+          await fs.rename(tempMp3Path, fullMp3Path);
+        }
+
+        // 3.5 Injection finale des paroles (Passage dédié après tout traitement FFmpeg)
+        const hasLyrics = this.options.lyrics && metadata.lyrics;
+        if (hasLyrics) {
+          console.log(`[Lyrics Debug] Injection finale des paroles via node-id3 (USLT + COMM)...`);
+
+          const tags = {
+            artist: metadata.artist,
+            albumArtist: metadata.albumArtist || metadata.artist,
+            unsynchronisedLyrics: {
+              language: 'eng',
+              text: metadata.plainLyrics
+            },
+            comment: {
+              language: 'eng',
+              text: metadata.plainLyrics
+            },
+            partOfCompilation: isPlaylist && !this.options.usePlaylistThumbnail,
+            userDefinedText: [
+              { description: "LYRICS_SYNCED", value: metadata.lyrics }
+            ]
+          };
+
+          const success = NodeID3.update(tags, fullMp3Path);
+          console.log(`[Lyrics Debug] Résultat de l'injection node-id3: ${success ? 'Succès' : 'Échec'}`);
+        }
+
+        // 4. Renommage final sans le préfixe
+        const finalBaseName = (metadata.artist && metadata.title)
+          ? `${metadata.artist} - ${metadata.title}`
+          : (metadata.title || mp3BaseName); 
+
+        const safeFinalName = finalBaseName.replace(/[\\/:*?"<>|]/g, '_').trim() + '.mp3';
+        finalDest = path.join(this.folder, safeFinalName);
+
+        await fs.rename(fullMp3Path, finalDest);
+
+        return {
+          title: metadata.title,
+          artist: metadata.artist,
+          thumbnail: actualThumbPath, 
+          finalDest: finalDest 
+        };
       }
-
-      // 4. Renommage final sans le préfixe
-      const finalBaseName = (metadata.artist && metadata.title)
-        ? `${metadata.artist} - ${metadata.title}`
-        : (metadata.title || mp3BaseName); // Utilise le titre nettoyé ou le nom de base si le titre est vide
-
-      // Sécurisation du nom de fichier pour Windows (suppression des caractères interdits)
-      const safeFinalName = finalBaseName.replace(/[\\/:*?"<>|]/g, '_').trim() + '.mp3';
-      finalDest = path.join(this.folder, safeFinalName);
-
-      await fs.rename(fullMp3Path, finalDest);
-
-      return {
-        title: metadata.title,
-        artist: metadata.artist,
-        thumbnail: actualThumbPath, // Chemin local de la miniature
-        finalDest: finalDest // Chemin complet du fichier MP3 final
-      };
     } finally {
       // 5. NETTOYAGE : basé sur l'ID pour ne pas supprimer les mauvais fichiers
       try {

@@ -1,54 +1,78 @@
-# Audivex `v1.3.18`
+# Audivex `v1.4.0`
 
 Une application de bureau dédiée au téléchargement et à la conversion de contenus YouTube en audio haute qualité.
 
 ## Fonctionnalités
 
-**Interface utilisateur**
+### Interface utilisateur
+
 Conçue pour une prise en main immédiate : collez un lien, configurez vos préférences, lancez le téléchargement. Une prévisualisation des métadonnées s'affiche dès la saisie de l'URL.
 
-**Qualité audio**
-Conversion automatique en MP3 (VBR Q0) avec gestion intelligente des canaux : mono, stéréo, et downmix spatialisé pour les sources multicanaux.
+### Formats de sortie
 
-**Gestion des playlists**
+Téléchargez vos contenus YouTube dans le format de votre choix :
+
+* MP3 haute qualité (VBR Q0)
+* MP4 avec sélection de la qualité vidéo
+
+### Qualité audio
+
+Conversion automatique en MP3 (VBR Q0) avec gestion intelligente des canaux : mono, stéréo et downmix spatialisé pour les sources multicanaux.
+
+### Téléchargement vidéo
+
+Téléchargement direct des vidéos au format MP4 avec plusieurs niveaux de qualité :
+
+* 360p
+* 480p
+* 720p
+* 1080p
+* Meilleure qualité disponible
+
+### Gestion des playlists
+
 Téléchargement de titres individuels ou de playlists complètes en un clic, avec numérotation automatique des pistes.
 
-**Métadonnées**
+### Métadonnées
+
 Un menu dédié permet de configurer précisément les tags appliqués à chaque fichier : titre, artiste, album, année, numéro de piste, pochette d'album et paroles synchronisées.
 
-**Mises à jour**
+### Mises à jour
+
 Système de mise à jour intégré pour maintenir l'application à jour automatiquement.
-
-## Utilisation
-
-1. Copiez l'URL d'une vidéo ou d'une playlist YouTube.
-2. Collez-la dans le champ de saisie (ou utilisez le bouton presse-papiers).
-3. Ajustez les préférences de métadonnées si nécessaire via le menu de configuration.
-4. Sélectionnez votre dossier de destination et lancez le téléchargement.
-
-## Stack technique
-
-| Composant | Technologie |
-|---|---|
-| Framework | Electron |
-| Moteur de téléchargement | yt-dlp |
-| Traitement audio | FFmpeg / ffprobe |
-| Interface | HTML, CSS |
-| Scriptage | JavaScript |
 
 ---
 
 ## Dernières modifications
 
-### `v1.3.18 -- 17/06/2026`
+### `v1.4.0 -- 19/06/2026`
 
-* **Ajout** — Nouveau menu **Paramètres** permettant de personnaliser la langue et de gérer les mises à jour automatiques.
+# Bienvenue dans Audivex v1.4.0 🚀
 
-* **Ajout** — Prise en charge de l'anglais dans le menu de sélection des langues.
+### ✨ Nouveau
 
-* **Ajout** — Il est désormais possible d’activer ou de désactiver les mises à jour automatiques.
+* Nouveau logo Audivex avec une identité visuelle modernisée.
 
-* **Mise à jour** — Le moteur `yt-dlp` a été mis à jour afin d'améliorer la stabilité et la compatibilité avec les dernières modifications de YouTube.
+### 🎨 Refonte
+
+* Refonte complète de l'interface utilisateur pour une expérience plus moderne, intuitive et agréable.
+
+### 🎵 Ajout
+
+* Possibilité de choisir le format de sortie de fichier :
+
+  * MP3
+  * MP4
+
+### 🎬 Ajout
+
+* Possibilité de télécharger les vidéos au format MP4 avec sélection de la qualité :
+
+  * 360p
+  * 480p
+  * 720p
+  * 1080p
+  * Meilleure qualité disponible
 
 ---
 

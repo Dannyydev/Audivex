@@ -82,15 +82,27 @@
           </svg>
         </button>
         <div id="optionsMenu" class="control-menu">
-          <label><input type="checkbox" id="checkTitle" checked /> Titre</label>
-          <label><input type="checkbox" id="checkArtist" checked /> Artiste</label>
-          <label><input type="checkbox" id="checkAlbum" checked /> Album</label>
-          <label><input type="checkbox" id="checkDate" checked /> Année</label>
-          <label><input type="checkbox" id="checkTrack" checked /> N° Piste</label>
-          <label><input type="checkbox" id="checkThumb" checked /> Pochette</label>
-          <label id="playlistThumbOption" class="sub-option"><input type="checkbox" id="checkPlaylistThumb" /> Pochette
-            Playlist</label>
-          <label><input type="checkbox" id="checkLyrics" checked /> Paroles</label>
+          <div id="mp3Options">
+            <label><input type="checkbox" id="checkTitle" checked /> Titre</label>
+            <label><input type="checkbox" id="checkArtist" checked /> Artiste</label>
+            <label><input type="checkbox" id="checkAlbum" checked /> Album</label>
+            <label><input type="checkbox" id="checkDate" checked /> Année</label>
+            <label><input type="checkbox" id="checkTrack" checked /> N° Piste</label>
+            <label><input type="checkbox" id="checkThumb" checked /> Pochette</label>
+            <label id="playlistThumbOption" class="sub-option"><input type="checkbox" id="checkPlaylistThumb" /> Pochette Playlist</label>
+            <label><input type="checkbox" id="checkLyrics" checked /> Paroles</label>
+          </div>
+          <div id="mp4Options" style="display: none; flex-direction: column; gap: 0.75em;">
+            <label id="videoQualityLabelText" style="cursor: default; font-weight: 500; margin-bottom: -0.2em;">Qualité vidéo :</label>
+            <select id="videoQualitySelect" class="video-quality-select" style="width: 100%;">
+              <option value="best" id="optQualityBest">Meilleure qualité</option>
+              <option value="1080">1080p</option>
+              <option value="720">720p</option>
+              <option value="480">480p</option>
+              <option value="360">360p</option>
+            </select>
+            <label><input type="checkbox" id="checkSubtitles" checked /> <span id="labelSubtitles">Sous-titres (si dispo)</span></label>
+          </div>
         </div>
       </div>
     </div>
@@ -111,6 +123,18 @@
         </svg>
       </button>
     </div>
+
+    <!-- Sélecteur de Format -->
+    <div class="format-selector">
+      <input type="radio" id="formatMp3" name="format" value="mp3" class="format-radio" checked>
+      <label for="formatMp3" class="format-label">MP3</label>
+      
+      <input type="radio" id="formatMp4" name="format" value="mp4" class="format-radio">
+      <label for="formatMp4" class="format-label">MP4</label>
+    </div>
+
+    <!-- Panneau de Qualité Vidéo supprimé (déplacé dans le menu) -->
+
 
     <!-- Structure de prévisualisation (cachée par défaut) -->
     <div id="previewCard" class="preview-card" style="display: none;">

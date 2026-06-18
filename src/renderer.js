@@ -23,6 +23,13 @@ const languageSelectionOverlay = document.getElementById('languageSelectionOverl
 const initialLanguageSelect = document.getElementById('initialLanguageSelect'); // New
 const confirmLanguageBtn = document.getElementById('confirmLanguageBtn'); // New
 
+// New Elements for MP4
+const formatRadios = document.querySelectorAll('.format-radio');
+const videoQualitySelect = document.getElementById('videoQualitySelect');
+const mp3Options = document.getElementById('mp3Options');
+const mp4Options = document.getElementById('mp4Options');
+const checkSubtitles = document.getElementById('checkSubtitles');
+
 // Localization strings
 const languageStrings = {
     'fr': {
@@ -65,7 +72,13 @@ const languageStrings = {
         initialLanguageLabel: "Langue de l'interface",
         confirmLanguageButton: "Continuer",
 
+        // Format & Quality
+        videoQualityLabel: "Qualité vidéo :",
+        optQualityBest: "Meilleure qualité",
+        labelSubtitles: "Sous-titres (si disponible)",
+
         // TOS Overlay
+
         tosWelcome: "Bienvenue sur Audivex !",
         tosDescription: "Pour continuer, veuillez confirmer avoir pris connaissance de nos documents légaux.<br>Vous devez avoir lu les conditions d'utilisation et la politique de confidentialité afin de comprendre les autorisations et les règles encadrant l'utilisation d'Audivex.",
         tosPrivacy: "J'ai lu la <a href=\"https://audivex.fr/Confidentialite\" class=\"tos-link\">politique de confidentialité</a>",
@@ -122,7 +135,13 @@ const languageStrings = {
         initialLanguageLabel: "Interface language",
         confirmLanguageButton: "Continue",
 
+        // Format & Quality
+        videoQualityLabel: "Video Quality:",
+        optQualityBest: "Best quality",
+        labelSubtitles: "Subtitles (if available.)",
+
         // TOS Overlay
+
         tosWelcome: "Welcome to Audivex!",
         tosDescription: "To continue, please confirm that you have read our legal documents.<br>You must have read the terms of use and the privacy policy to understand the permissions and rules governing the use of Audivex.",
         tosPrivacy: "I have read the <a href=\"https://audivex.fr/Confidentialite\" class=\"tos-link\">privacy policy</a>",
@@ -179,7 +198,13 @@ const languageStrings = {
         initialLanguageLabel: "Idioma de la interfaz",
         confirmLanguageButton: "Continuar",
 
+        // Format & Quality
+        videoQualityLabel: "Calidad de video:",
+        optQualityBest: "Mejor calidad",
+        labelSubtitles: "Subtítulos (si está disponible)",
+
         // TOS Overlay
+
         tosWelcome: "¡Bienvenido a Audivex!", // Welcome to Audivex!
         tosDescription: "Para continuar, confirme que ha leído nuestros documentos legales.<br>Debe haber leído las condiciones de uso y la política de privacidad para comprender los permisos y las reglas que rigen el uso de Audivex.", // To continue, please confirm that you have read our legal documents. You must have read the terms of use and the privacy policy to understand the permissions and rules governing the use of Audivex.
         tosPrivacy: "He leído la <a href=\"https://audivex.fr/Confidentialite\" class=\"tos-link\">política de privacidad</a>", // I have read the privacy policy
@@ -352,6 +377,13 @@ function loadSettings() {
     if (savedLanguage) {
         currentLanguage = savedLanguage;
     }
+
+    // Load format and quality settings
+    const savedFormat = localStorage.getItem('formatOption') || 'mp3';
+    document.querySelector(`input[name="format"][value="${savedFormat}"]`).checked = true;
+    const savedQuality = localStorage.getItem('videoQualitySelect') || 'best';
+    if (videoQualitySelect) videoQualitySelect.value = savedQuality;
+    updateFormatUI(savedFormat);
 }
 
 function saveSettings() {
@@ -367,12 +399,41 @@ function saveSettings() {
         if (el) localStorage.setItem(id, el.checked);
     });
     localStorage.setItem('appLanguage', currentLanguage);
+
+    const selectedFormat = document.querySelector('input[name="format"]:checked').value;
+    localStorage.setItem('formatOption', selectedFormat);
+    if (videoQualitySelect) localStorage.setItem('videoQualitySelect', videoQualitySelect.value);
+    if (checkSubtitles) localStorage.setItem('checkSubtitles', checkSubtitles.checked);
 }
 
 // Ajouter l'écouteur de sauvegarde sur chaque checkbox
 metadataCheckboxes.forEach(id => {
     document.getElementById(id)?.addEventListener('change', saveSettings);
 });
+if (checkSubtitles) {
+    checkSubtitles.addEventListener('change', saveSettings);
+}
+
+// Ecouteurs pour le format et qualité
+formatRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        updateFormatUI(e.target.value);
+        saveSettings();
+    });
+});
+if (videoQualitySelect) {
+    videoQualitySelect.addEventListener('change', saveSettings);
+}
+
+function updateFormatUI(format) {
+    if (format === 'mp4') {
+        if (mp3Options) mp3Options.style.display = 'none';
+        if (mp4Options) mp4Options.style.display = 'flex';
+    } else {
+        if (mp3Options) mp3Options.style.display = 'block';
+        if (mp4Options) mp4Options.style.display = 'none';
+    }
+}
 
 // Handle language change
 function handleLanguageChange() {
@@ -414,6 +475,18 @@ function applyTranslations() {
         document.getElementById('confirmLanguageBtn').textContent = _t('confirmLanguageButton');
         if (initialLanguageSelect) initialLanguageSelect.value = currentLanguage;
     }
+
+    // Format & Quality
+    if (document.getElementById('videoQualityLabelText')) {
+        document.getElementById('videoQualityLabelText').textContent = _t('videoQualityLabel');
+    }
+    if (document.getElementById('optQualityBest')) {
+        document.getElementById('optQualityBest').textContent = _t('optQualityBest');
+    }
+    if (document.getElementById('labelSubtitles')) {
+        document.getElementById('labelSubtitles').textContent = _t('labelSubtitles');
+    }
+
     // TOS Overlay
     document.querySelector('#tosOverlay h2').textContent = _t('tosWelcome');
     document.querySelector('#tosOverlay p').innerHTML = _t('tosDescription');
@@ -542,8 +615,11 @@ downloadBtn.addEventListener('click', async () => {
     // On vide les anciens échecs
     if (failedDownloadsContainer) failedDownloadsContainer.innerHTML = '';
 
-    // Récupération des options de métadonnées
+    // Récupération des options de métadonnées et de format
     const options = {
+        format: document.querySelector('input[name="format"]:checked').value,
+        videoQuality: document.getElementById('videoQualitySelect')?.value || 'best',
+        subtitles: document.getElementById('checkSubtitles')?.checked ?? false,
         title: document.getElementById('checkTitle')?.checked ?? true,
         artist: document.getElementById('checkArtist')?.checked ?? true,
         album: document.getElementById('checkAlbum')?.checked ?? true,
@@ -555,6 +631,7 @@ downloadBtn.addEventListener('click', async () => {
     };
 
     window.api.startDownload({ url, folder, options });
+
 });
 
 window.api.onStatus((text, color) => {
