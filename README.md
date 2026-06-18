@@ -45,7 +45,7 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ## Dernières modifications
 
-### `v1.4.0 -- 19/06/2026`
+### `v1.4.0 -- 18/06/2026`
 
 # Bienvenue dans Audivex v1.4.0 🚀
 
