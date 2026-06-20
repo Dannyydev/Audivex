@@ -215,7 +215,259 @@ const languageStrings = {
         invalidUrl: "URL no válida.",
         downloading: "Descargando...",
         downloadComplete: "¡Descarga completada! 🎧"
+    },
+    'it': {
+        // Main UI
+        urlInputPlaceholder: "Incolla il tuo link YouTube qui...",
+        pasteBtnTitle: "Incolla dal clipboard",
+        downloadBtnText: "Scarica",
+        statusReady: "Pronto per il download",
+        settingsBtnTitle: "Impostazioni generali",
+        menuBtnTitle: "Opzioni metadati",
+
+        // Options Menu
+        checkTitle: "Titolo",
+        checkArtist: "Artista",
+        checkAlbum: "Album",
+        checkDate: "Anno",
+        checkTrack: "N° Traccia",
+        checkThumb: "Copertina",
+        checkPlaylistThumb: "Copertina Playlist",
+        checkLyrics: "Testo",
+
+        // Preview Card
+        previewLoadingTitle: "Ricerca info...",
+        previewLoadingMeta: "Attendere prego...",
+        previewNotFoundTitle: "Video non trovato",
+        previewNotFoundMeta: "Verifica il link o la visibilità.",
+        playlistDetected: "Playlist rilevata",
+        titlesCount: "titoli", // e.g., "3 titres"
+        videoPrefix: "Video #", // for failure card meta
+        notAvailable: "Non disponibile", // for failure card meta
+
+        // Settings Modal
+        settingsModalTitle: "Impostazioni di Audivex",
+        autoUpdateSetting: "Ricerca aggiornamenti automaticamente",
+        languageSetting: "Lingua dell'interfaccia",
+
+        // Initial Language Selection
+        initialLanguageSelectionTitle: "Scegli la tua lingua",
+        initialLanguageSelectionDescription: "Per favore, seleziona la lingua dell'interfaccia per Audivex.",
+        initialLanguageLabel: "Lingua dell'interfaccia",
+        confirmLanguageButton: "Continuare",
+
+        // Format & Quality
+        videoQualityLabel: "Qualità video :",
+        optQualityBest: "Migliore qualità",
+        labelSubtitles: "Sottotitoli (se disponibile)",
+
+        // TOS Overlay
+
+        tosWelcome: "Benvenuto su Audivex!",
+        tosDescription: "Per continuare, si prega di confermare di aver preso conoscenza dei nostri documenti legali.<br>È necessario aver letto i termini di utilizzo e la politica sulla privacy per comprendere le autorizzazioni e le regole che disciplinano l'uso di Audivex.",
+        tosPrivacy: "Ho letto la <a href=\"https://audivex.fr/Confidentialite\" class=\"tos-link\">politica sulla privacy</a>",
+        tosConditions: "Accetto i <a href=\"https://audivex.fr/Conditions\" class=\"tos-link\">termini di utilizzo</a>",
+        tosValidate: "Conferma e continua",
+
+        // Status messages (from renderer.js)
+        invalidUrl: "URL non valido.",
+        clipboardError: "Impossibile leggere dagli appunti (accesso negato?)",
+        downloading: "Download...",
+        downloaded: "Scaricato :",
+        playlistDownloadComplete: "Download della playlist completato!",
+        videos: "video",
+        downloadComplete: "Download completato! 🎧",
+        failedDownloadsHeader: "Download falliti :"
+    },
+    'de': {
+        // Main UI
+        urlInputPlaceholder: "Füge deinen YouTube-Link hier ein...",
+        pasteBtnTitle: "Aus der Zwischenablage einfügen",
+        downloadBtnText: "Herunterladen",
+        statusReady: "Bereit zum Herunterladen",
+        settingsBtnTitle: "Allgemeine Einstellungen",
+        menuBtnTitle: "Metadaten-Optionen",
+
+        // Options Menu
+        checkTitle: "Titel",
+        checkArtist: "Künstler",
+        checkAlbum: "Album",
+        checkDate: "Jahr",
+        checkTrack: "Nr. Titel",
+        checkThumb: "Deckblatt",
+        checkPlaylistThumb: "Copertina Playlist",
+        checkLyrics: "Liedtext",
+
+        // Preview Card
+        previewLoadingTitle: "Suche Infos...",
+        previewLoadingMeta: "Bitte warten...",
+        previewNotFoundTitle: "Video nicht gefunden",
+        previewNotFoundMeta: "Überprüfe den Link oder die Sichtbarkeit.",
+        playlistDetected: "Playlist detected",
+        titlesCount: "Titel", // e.g., "3 titres"
+        videoPrefix: "Video #", // for failure card meta
+        notAvailable: "Nicht verfügbar", // for failure card meta
+
+        // Settings Modal
+        settingsModalTitle: "Einstellungen von Audivex",
+        autoUpdateSetting: "Automatische Suche nach Updates",
+        languageSetting: "Sprache der Oberfläche",
+
+        // Initial Language Selection
+        initialLanguageSelectionTitle: "Wähle deine Sprache",
+        initialLanguageSelectionDescription: "Bitte wähle die Sprache der Oberfläche für Audivex.",
+        initialLanguageLabel: "Sprache der Oberfläche",
+        confirmLanguageButton: "Fortfahren",
+
+        // Format & Quality
+        videoQualityLabel: "Videoqualität:",
+        optQualityBest: "Beste Qualität",
+        labelSubtitles: "Untertitel (falls verfügbar)",
+
+        // TOS Overlay
+
+        tosWelcome: "Willkommen bei Audivex!",
+        tosDescription: "Um fortzufahren, bestätigen Sie bitte, dass Sie unsere rechtlichen Dokumente gelesen haben.<br>Sie müssen die Nutzungsbedingungen und die Datenschutzrichtlinie gelesen haben, um die Berechtigungen und Regeln zu verstehen, die die Nutzung von Audivex regeln.",
+        tosPrivacy: "Ich habe die <a href=\"https://audivex.fr/Confidentialite\" class=\"tos-link\">Datenschutzrichtlinie</a> gelesen",
+        tosConditions: "Ich akzeptiere die <a href=\"https://audivex.fr/Conditions\" class=\"tos-link\">Nutzungsbedingungen</a>",
+        tosValidate: "Fortfahren",
+
+        // Status messages (from renderer.js)
+        invalidUrl: "Ungültige URL.",
+        clipboardError: "Clipboard kann nicht gelesen werden (Zugriff verweigert?)",
+        downloading: "Herunterladen...",
+        downloaded: "Heruntergeladen :",
+        playlistDownloadComplete: "Playlist-Download abgeschlossen!",
+        videos: "Videos",
+        downloadComplete: "Download abgeschlossen! 🎧",
+        failedDownloadsHeader: "Fehlgeschlagene Downloads :"
+    },
+    'ru': {
+        // Main UI
+        urlInputPlaceholder: "Вставьте вашу ссылку на YouTube сюда...",
+        pasteBtnTitle: "Вставить из буфера обмена",
+        downloadBtnText: "Скачать",
+        statusReady: "Готов к скачиванию",
+        settingsBtnTitle: "Общие настройки",
+        menuBtnTitle: "Опции метаданных",
+
+        // Options Menu
+        checkTitle: "Название",
+        checkArtist: "Артист",
+        checkAlbum: "Альбом",
+        checkDate: "Год",
+        checkTrack: "Номер трека",
+        checkThumb: "Обложка",
+        checkPlaylistThumb: "Обложка плейлиста",
+        checkLyrics: "Текст песни",
+
+        // Preview Card
+        previewLoadingTitle: "Поиск информации...",
+        previewLoadingMeta: "Пожалуйста, подождите...",
+        previewNotFoundTitle: "Видео не найдено",
+        previewNotFoundMeta: "Проверьте ссылку или видимость.",
+        playlistDetected: "Обнаружен плейлист",
+        titlesCount: "Titel", // e.g., "3 titres"
+        videoPrefix: "Видео #", // for failure card meta
+        notAvailable: "Недоступно", // for failure card meta
+
+        // Settings Modal
+        settingsModalTitle: "Настройки Audivex",
+        autoUpdateSetting: "Автоматический поиск обновлений",
+        languageSetting: "Язык интерфейса",
+
+        // Initial Language Selection
+        initialLanguageSelectionTitle: "Выберите язык",
+        initialLanguageSelectionDescription: "Пожалуйста, выберите язык интерфейса для Audivex.",
+        initialLanguageLabel: "Язык интерфейса",
+        confirmLanguageButton: "Продолжить",
+
+        // Format & Quality
+        videoQualityLabel: "Качество видео:",
+        optQualityBest: "Лучшее качество",
+        labelSubtitles: "Субтитры (если доступны)",
+
+        // TOS Overlay
+
+        tosWelcome: "Добро пожаловать в Audivex!",
+        tosDescription: "Чтобы продолжить, пожалуйста, подтвердите, что вы ознакомились с нашими правовыми документами.<br>Вы должны прочитать условия использования и политику конфиденциальности, чтобы понять разрешения и правила, регулирующие использование Audivex.",
+        tosPrivacy: "Я прочитал <a href=\"https://audivex.fr/Confidentialite\" class=\"tos-link\">политику конфиденциальности</a>",
+        tosConditions: "Я принимаю <a href=\"https://audivex.fr/Conditions\" class=\"tos-link\">условия использования</a>",
+        tosValidate: "Продолжить",
+
+        // Status messages (from renderer.js)
+        invalidUrl: "Неверный URL.",
+        clipboardError: "Не удалось прочитать буфер обмена (отказ в доступе?)",
+        downloading: "Загрузка...",
+        downloaded: "Загружено :",
+        playlistDownloadComplete: "Загрузка плейлиста завершена!",
+        videos: "Видео",
+        downloadComplete: "Загрузка завершена! 🎧",
+        failedDownloadsHeader: "Не удалось загрузить :"
+    },
+    'ja': {
+        // Main UI
+        urlInputPlaceholder: "ここにYouTubeリンクを貼り付けてください...",
+        pasteBtnTitle: "クリップボードから貼り付ける",
+        downloadBtnText: "ダウンロード",
+        statusReady: "ダウンロード準備完了",
+        settingsBtnTitle: "一般設定",
+        menuBtnTitle: "メタデータオプション",
+
+        // Options Menu
+        checkTitle: "タイトル",
+        checkArtist: "アーティスト",
+        checkAlbum: "アルバム",
+        checkDate: "年",
+        checkTrack: "トラック番号",
+        checkThumb: "カバー画像",
+        checkPlaylistThumb: "プレイリストのカバー",
+        checkLyrics: "歌詞",
+
+        // Preview Card
+        previewLoadingTitle: "情報の検索中...",
+        previewLoadingMeta: "少々お待ちください...",
+        previewNotFoundTitle: "動画が見つかりません",
+        previewNotFoundMeta: "リンクを確認するか、動画が公開されているか確認してください。",
+        playlistDetected: "プレイリストが検出されました",
+        titlesCount: "タイトル",
+        videoPrefix: "動画 #",
+        notAvailable: "利用不可",
+
+        // Settings Modal
+        settingsModalTitle: "Audivexの設定",
+        autoUpdateSetting: "自動更新チェック",
+        languageSetting: "インターフェース言語",
+
+        // Initial Language Selection
+        initialLanguageSelectionTitle: "言語を選択してください",
+        initialLanguageSelectionDescription: "Audivexのインターフェース言語を選択してください。",
+        initialLanguageLabel: "インターフェース言語",
+        confirmLanguageButton: "続行",
+
+        // Format & Quality
+        videoQualityLabel: "動画の品質:",
+        optQualityBest: "最高品質",
+        labelSubtitles: "字幕（利用可能な場合）",
+
+        // TOS Overlay
+        tosWelcome: "Audivexへようこそ！",
+        tosDescription: "続行するには、当社の法的文書を確認したことを確認してください。<br>Audivexの使用を規定する許可と規則を理解するには、利用規約とプライバシーポリシーを読む必要があります。",
+        tosPrivacy: "私は<a href=\"https://audivex.fr/Confidentialite\" class=\"tos-link\">プライバシーポリシー</a>を読みました",
+        tosConditions: "私は<a href=\"https://audivex.fr/Conditions\" class=\"tos-link\">利用規約</a>に同意します",
+        tosValidate: "続行",
+
+        // Status messages (from renderer.js)
+        invalidUrl: "無効なURLです。",
+        clipboardError: "クリップボードを読み取れませんでした（アクセス拒否？）",
+        downloading: "ダウンロード中...",
+        downloaded: "ダウンロード完了：",
+        playlistDownloadComplete: "プレイリストのダウンロードが完了しました！",
+        videos: "動画",
+        downloadComplete: "ダウンロード完了！ 🎧",
+        failedDownloadsHeader: "ダウンロードに失敗しました："
     }
+
 };
 
 // Helper function for translation
@@ -384,6 +636,17 @@ function loadSettings() {
     const savedQuality = localStorage.getItem('videoQualitySelect') || 'best';
     if (videoQualitySelect) videoQualitySelect.value = savedQuality;
     updateFormatUI(savedFormat);
+
+    // Initialiser le choix pour les mises à jour auto au backend
+    const disableAutoUpdatesCheckbox = document.getElementById('disableAutoUpdates');
+    if (disableAutoUpdatesCheckbox && window.api && window.api.setAutoUpdatePreference) {
+        // Attention : si la case s'appelle "Rechercher automatiquement" mais a pour ID "disableAutoUpdates",
+        // il se peut que la logique soit inversée. Actuellement on envoie l'état tel quel.
+        // On force un petit délai pour être sûr que le main process écoute
+        setTimeout(() => {
+            window.api.setAutoUpdatePreference(disableAutoUpdatesCheckbox.checked);
+        }, 500);
+    }
 }
 
 function saveSettings() {

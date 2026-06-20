@@ -45,18 +45,13 @@ Système de mise à jour intégré pour maintenir l'application à jour automati
 
 ## Dernières modifications
 
-# `Audivex v1.4.0 — 19/06/2026`
+# `Audivex v1.4.1 — 20/06/2026`
 
-* **Mise à jour** — Nouveau logo Audivex avec une identité visuelle modernisée.
+* **Ajout de nouvelles langues :** Russe, Allemand, Italien et Japonais.
 
-* **Mise à jour** — Refonte complète de l'interface utilisateur.
+* **Mise à jour** — L'interface s'adapte parfaitement à la taille de la fenêtre.
 
-* **Nouveau** — Ajout du choix du format de téléchargement (MP3 / MP4).
-
-* **Nouveau** — Sélection de la qualité vidéo : 360p, 480p, 720p, 1080p ou meilleure qualité disponible.
-
-* **Nouveau** — Possibilité d'intégrer les sous-titres aux vidéos MP4.
-
+* **Fix** — Processus de mise à jour corrigé.
 
 ---
 

@@ -92,7 +92,8 @@ class DownloadHandler {
             const response = await fetch(thumbUrl, {
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-              }
+              },
+              signal: AbortSignal.timeout(10000)
             });
             if (response.ok) {
               const arrayBuffer = await response.arrayBuffer();
@@ -118,52 +119,44 @@ class DownloadHandler {
       let successCount = 0; // Compteur de succès
       const failures = [];
 
-      const CONCURRENCY_LIMIT = 8;
-      const chunks = [];
+      const CONCURRENCY_LIMIT = 4;
+      
+      let currentIndex = 0;
+      const workers = [];
+      
+      const worker = async () => {
+        while (currentIndex < total) {
+          const idx = currentIndex++;
+          const entry = entries[idx];
+          const index = idx + 1; // 1-based indexing for display
 
-      for (let i = 0; i < total; i += CONCURRENCY_LIMIT) {
-        chunks.push(entries.slice(i, i + CONCURRENCY_LIMIT));
-      }
-
-      this.sendUpdate('progress', 0, 0, total);
-      let lastSuccessfulMetadata = null; // Pour stocker les infos du dernier téléchargement réussi (si unique)
-
-      let currentIndex = 1;
-
-      for (const chunk of chunks) {
-
-        const promises = chunk.map((entry, idx) => {
-          const index = currentIndex + idx;
-
-          return this.processItem(index, isPlaylist, entry, data.title)
-            .then((itemResult) => { // Capture les métadonnées retournées par processItem
-              successCount++;
-              if (this.onItemSuccess) this.onItemSuccess(); // Signalement en temps réel
-              if (!isPlaylist || total === 1) { // Si c'est un téléchargement unique ou une playlist d'un seul élément
-                lastSuccessfulMetadata = itemResult;
-              }
-            })
-            .catch(err => {
-              console.error(`[Process Error] ${entry.title || entry.id}:`, err);
-              failures.push({
-                title: entry.title || entry.id || `Vidéo #${index}`,
-                index: index,
-                thumbnail: entry.thumbnail || (entry.thumbnails && entry.thumbnails[0]?.url) || ''
-              });
-            })
-            .finally(() => {
-              processed++;
-              const percent = (processed / total) * 100;
-              this.sendUpdate('progress', percent, processed, total);
+          try {
+            const itemResult = await this.processItem(index, isPlaylist, entry, data.title);
+            successCount++;
+            if (this.onItemSuccess) this.onItemSuccess(); // Signalement en temps réel
+            if (!isPlaylist || total === 1) { // Si c'est un téléchargement unique ou une playlist d'un seul élément
+              lastSuccessfulMetadata = itemResult;
+            }
+          } catch (err) {
+            console.error(`[Process Error] ${entry.title || entry.id}:`, err);
+            failures.push({
+              title: entry.title || entry.id || `Vidéo #${index}`,
+              index: index,
+              thumbnail: entry.thumbnail || (entry.thumbnails && entry.thumbnails[0]?.url) || ''
             });
+          } finally {
+            processed++;
+            const percent = (processed / total) * 100;
+            this.sendUpdate('progress', percent, processed, total);
+          }
+        }
+      };
 
-        });
-
-        await Promise.allSettled(promises);
-
-        currentIndex += chunk.length;
-
+      for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, total); i++) {
+        workers.push(worker());
       }
+
+      await Promise.allSettled(workers);
 
       if (failures.length === 0) {
         this.sendUpdate('complete', { isPlaylist: total > 1, total: successCount, lastDownloaded: lastSuccessfulMetadata, failures: [] });
@@ -399,11 +392,13 @@ class DownloadHandler {
       // 5. NETTOYAGE : basé sur l'ID pour ne pas supprimer les mauvais fichiers
       try {
         const currentId = entry.id || ''; // Assure que currentId est défini
-        const remaining = await fs.readdir(this.folder);
-        for (const file of remaining) {
-          const fullPath = path.join(this.folder, file);
-          if (file.includes(currentId) && fullPath !== finalDest) {
-            await this.safeUnlink(fullPath);
+        if (currentId && currentId.length > 5) { // Sécurité stricte pour éviter la suppression totale
+          const remaining = await fs.readdir(this.folder);
+          for (const file of remaining) {
+            const fullPath = path.join(this.folder, file);
+            if (file.includes(currentId) && fullPath !== finalDest) {
+              await this.safeUnlink(fullPath);
+            }
           }
         }
       } catch (e) { console.error("Cleanup error:", e); }
@@ -534,7 +529,7 @@ class DownloadHandler {
 
       // LRCLIB est une API gratuite et performante pour les paroles LRC
       const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(cleanedTitle)}&duration=${Math.round(duration)}`;
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
       console.log(`[Lyrics Debug] URL LRCLIB (cleaned title): ${url}`);
       if (!response.ok) return null;
 
@@ -563,7 +558,7 @@ class DownloadHandler {
         command,
         args,
         {
-          maxBuffer: 1024 * 1024 * 10,
+          maxBuffer: 1024 * 1024 * 50,
           windowsHide: true
         },
         (error, stdout, stderr) => {

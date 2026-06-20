@@ -5,8 +5,8 @@
 }
 
 html {
-  /* La taille de base est définie ici : 4% de la plus petite dimension de la fenêtre */
-  font-size: clamp(10px, 4vmin, 18px);
+  /* La taille de base s'adapte dynamiquement à la largeur et hauteur de la fenêtre pour "zoomer" */
+  font-size: min(3.5vw, 2.2vh);
 }
 
 body {
@@ -40,7 +40,6 @@ body::before {
 
 /* bloc principal */
 .container {
-
   width: 100%;
   max-width: 32em;
   padding: 2.5em 2.5em 2em;

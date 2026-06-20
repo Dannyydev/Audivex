@@ -3,10 +3,27 @@ const { autoUpdater } = require('electron-updater');
 const { execFile } = require('child_process');
 const path = require('path');
 const os = require('os');
+const fsMain = require('fs');
+const crypto = require('crypto');
 const DownloadHandler = require('./downloadHandler');
 
 let mainWindow;
 let autoUpdatesDisabled = false; // New: Global variable to store user preference for auto-updates
+
+function getMachineId() {
+  const idPath = path.join(app.getPath('userData'), 'machine-id.txt');
+  try {
+    if (fsMain.existsSync(idPath)) {
+      return fsMain.readFileSync(idPath, 'utf8').trim();
+    }
+  } catch (e) {}
+
+  const newId = crypto.randomUUID();
+  try {
+    fsMain.writeFileSync(idPath, newId, 'utf8');
+  } catch (e) {}
+  return newId;
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -29,10 +46,7 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Gestion des mises à jour automatiques (only if not disabled by user)
-  if (app.isPackaged && !autoUpdatesDisabled) { // Check initial preference
-    autoUpdater.checkForUpdates(); // Check for updates immediately on launch
-  }
+  // Gestion des mises à jour automatiques différée (attente de la préférence utilisateur)
 }
 
 // Initialisation des événements d'update en dehors de createWindow pour éviter les doublons
@@ -71,8 +85,8 @@ if (app.isPackaged) {
 async function sendTelemetry() {
   try {
     const stats = {
-      username: os.userInfo().username, // Nom de session Windows
-      hostname: os.hostname(),          // Nom de l'ordinateur
+      userId: getMachineId(),           // Identifiant unique anonyme
+
       version: app.getVersion(),        // Version d'Audivex
       platform: process.platform,       // win32, etc.
       date: new Date().toISOString()
@@ -82,7 +96,8 @@ async function sendTelemetry() {
     await fetch('https://script.google.com/macros/s/AKfycbylNHbdqXemM2ZxVN-KTreFcNkkgCGlcc2d0K2A8n__J2eACcd6ErGbPAZ68DHCDyvXcA/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(stats)
+      body: JSON.stringify(stats),
+      signal: AbortSignal.timeout(5000)
     });
   } catch (e) {
     // On échoue silencieusement pour ne pas gêner l'utilisateur si pas d'internet
@@ -93,7 +108,7 @@ async function sendTelemetry() {
 async function sendDownloadStats(downloadCount) {
   try {
     const stats = {
-      username: os.userInfo().username, // Nom de session Windows
+      userId: getMachineId(),            // Identifiant unique anonyme
       downloadCount: downloadCount,      // Nombre de musiques téléchargées
       date: new Date().toISOString(),
       type: 'download'
@@ -102,7 +117,8 @@ async function sendDownloadStats(downloadCount) {
     await fetch('https://script.google.com/macros/s/AKfycbx7qwYneeW6y-s_MNXALkbZRlb5m-qq8AgI2_ZgYvygFK4G_gjcXuQ2q2boMRpc34s3eg/exec', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(stats)
+      body: JSON.stringify(stats),
+      signal: AbortSignal.timeout(5000)
     });
   } catch (e) {
     // On échoue silencieusement pour ne pas gêner l'utilisateur si pas d'internet
@@ -117,6 +133,9 @@ app.whenReady().then(() => {
 // New: IPC handler to receive auto update preference from renderer
 ipcMain.on('set-auto-update-preference', (event, isDisabled) => {
   autoUpdatesDisabled = isDisabled;
+  if (!isDisabled && app.isPackaged) {
+    autoUpdater.checkForUpdates();
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -154,7 +173,7 @@ async function getMetadataViaYtDlp(url) {
   const args = [url, '--dump-single-json', '--flat-playlist', '--no-warnings'];
 
   return new Promise((resolve, reject) => {
-    execFile(ytDlpPath, args, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+    execFile(ytDlpPath, args, { maxBuffer: 1024 * 1024 * 50 }, (error, stdout, stderr) => {
       if (error) return reject(stderr || error.message);
       try {
         const data = JSON.parse(stdout);
