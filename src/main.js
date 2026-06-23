@@ -16,12 +16,12 @@ function getMachineId() {
     if (fsMain.existsSync(idPath)) {
       return fsMain.readFileSync(idPath, 'utf8').trim();
     }
-  } catch (e) {}
+  } catch (e) { }
 
   const newId = crypto.randomUUID();
   try {
     fsMain.writeFileSync(idPath, newId, 'utf8');
-  } catch (e) {}
+  } catch (e) { }
   return newId;
 }
 
@@ -71,7 +71,9 @@ if (app.isPackaged) {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    sendUpdateMsg('Mise à jour téléchargée. Redémarrez l\'application pour l\'appliquer.', 'success');
+    if (!autoUpdatesDisabled) {
+      sendUpdateMsg('Mise à jour téléchargée. Redémarrez l\'application pour l\'appliquer.', 'success');
+    }
     const notif = new Notification({
       title: `v${info.version}`,
       body: `Cliquez ici pour mettre à jour`,
@@ -243,7 +245,9 @@ ipcMain.on('start-download', (event, { url, folder, options }) => {
 
 // Pour appliquer la mise à jour si l'utilisateur le demande (optionnel, sinon ça se fait au prochain lancement)
 ipcMain.on('restart-app', () => {
-  autoUpdater.quitAndInstall();
+  if (app.isPackaged) {
+    autoUpdater.quitAndInstall();
+  }
 });
 
 ipcMain.handle('get-app-version', () => {

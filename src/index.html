@@ -107,13 +107,16 @@
               <option value="480">480p</option>
               <option value="360">360p</option>
             </select>
-            <label><input type="checkbox" id="checkSubtitles" checked /> <span id="labelSubtitles">Sous-titres (si
-                dispo)</span></label>
+            <div class="subtitle-info-wrapper" id="subtitleWrapper">
+              <label>
+                <input type="checkbox" id="checkSubtitles" /> <span id="labelSubtitles">Sous-titres (si
+                  dispo)</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
 
     <div class="header">
       <!-- Vous pouvez remplacer `icon.png` par le chemin vers votre logo -->
@@ -163,11 +166,21 @@
       <span>Télécharger</span>
     </button>
 
+    <!-- Carte de téléchargement terminé -->
+    <div id="downloadCompleteCard" class="download-complete-card">
+      <img id="downloadCompleteThumb" class="download-complete-thumb" src="" alt="Miniature" />
+      <div class="download-complete-info">
+        <h4 id="downloadCompleteTitle" class="download-complete-title"></h4>
+        <p id="downloadCompleteArtist" class="download-complete-artist"></p>
+      </div>
+    </div>
+
     <div class="status-container">
       <div class="progress-container">
         <div id="progressBar"></div>
       </div>
       <p id="statusLabel">Prêt à télécharger</p>
+      <p id="etaLabel" class="eta-label"></p>
       <p id="versionLabel"></p>
       <p class="copyright">&copy; 2026 Dan&Tom</p>
     </div>
@@ -191,6 +204,45 @@
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
         </svg>
       </a>
+    </div>
+  </div>
+
+  <!-- Modal de consentement pour les sous-titres -->
+  <div id="subtitleConsentModal" class="modal-overlay">
+    <div class="modal-content subtitle-modal-content">
+      <div class="modal-header">
+        <h3 id="subtitleConsentTitle">Téléchargement des sous-titres</h3>
+        <button id="closeSubtitleConsent" class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Étapes à vérifier -->
+        <div class="subtitle-steps">
+          <div class="subtitle-step">
+            <span class="step-num">1</span>
+            <span id="subtitleStep1">Vérifiez que le navigateur sélectionné est installé</span>
+          </div>
+          <div class="subtitle-step">
+            <span class="step-num">2</span>
+            <span id="subtitleStep2">Vérifiez que vous êtes connecté à YouTube dans ce navigateur</span>
+          </div>
+        </div>
+
+        <div class="browser-select-block">
+          <label class="browser-select-label" id="browserSelectLabel" for="browserSelect"></label>
+          <select id="browserSelect" class="browser-select">
+            <option value="chrome">Chrome</option>
+            <option value="firefox">Firefox</option>
+            <option value="edge">Edge</option>
+            <option value="opera">Opera</option>
+            <option value="brave">Brave</option>
+            <option value="vivaldi">Vivaldi</option>
+            <option value="chromium">Chromium</option>
+          </select>
+        </div>
+
+        <p id="subtitleConsentWarning" class="subtitle-warning-text"></p>
+        <button id="subtitleConsentBtn" class="primary-btn"></button>
+      </div>
     </div>
   </div>
 
@@ -224,10 +276,11 @@
         <div class="settings-option">
           <!-- Placeholder for future settings -->
         </div>
-        <!-- On pourra ajouter d'autres options ici plus tard -->
       </div>
     </div>
   </div>
 
   <script src="./renderer.js"></script>
 </body>
+
+</html>

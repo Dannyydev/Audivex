@@ -323,75 +323,6 @@ h1 {
   }
 }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.2);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.3s ease;
-}
-
-.modal-overlay.show {
-  display: flex;
-}
-
-.modal-content {
-  background: white;
-  padding: 2em;
-  border-radius: 1.5em;
-  width: 100%;
-  max-width: 28em;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-  animation: slideUp 0.3s ease;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2em;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.3em;
-}
-
-.close-modal {
-  background: none;
-  border: none;
-  font-size: 2em;
-  color: #8a8a8f;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.close-modal:hover {
-  color: #c94a4a;
-}
-
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5em;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .control-menu label {
   font-size: 0.85em;
   color: #4a4a4a;
@@ -837,7 +768,7 @@ input:checked+.slider:before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
-.format-radio:checked + .format-label {
+.format-radio:checked+.format-label {
   background: linear-gradient(135deg, #1281ff, #0056b3);
   color: white;
   border-color: transparent;
@@ -851,13 +782,14 @@ input:checked+.slider:before {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-.format-radio:checked + .format-label:hover {
+.format-radio:checked+.format-label:hover {
   background: linear-gradient(135deg, #1a8fff, #0066cc);
 }
 
 /* Video Quality Panel */
 .video-quality-panel {
-  display: none; /* Flex when visible */
+  display: none;
+  /* Flex when visible */
   align-items: center;
   justify-content: center;
   gap: 1em;
@@ -887,4 +819,116 @@ input:checked+.slider:before {
 .video-quality-select:focus {
   border-color: #a0b0c0;
   background: white;
+}
+
+.eta-label {
+  font-size: 0.85em;
+  color: #636e72;
+  min-height: 1.2em;
+  font-weight: 400;
+}
+
+/* Style pour checkbox sous-titres en attente de consentement */
+#checkSubtitles.pending-consent {
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+#subtitleWrapper.pending-consent-wrapper {
+  cursor: pointer;
+}
+
+/* === Subtitle Consent Modal === */
+.subtitle-modal-content {
+  max-width: 26em;
+}
+
+.subtitle-modal-desc {
+  color: #4a4a4a;
+  line-height: 1.55;
+  margin: 0;
+  font-size: 0.95em;
+}
+
+/* Étapes à vérifier */
+.subtitle-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+}
+
+.subtitle-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  font-size: 0.9em;
+  color: #2c2c2e;
+}
+
+.step-num {
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: #1281ff;
+  color: white;
+  font-size: 0.85em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.subtitle-warning-text {
+  margin: 0;
+  font-size: 0.85em;
+  color: #b85c00;
+  line-height: 1.45;
+}
+
+/* === Browser Selector === */
+.browser-select-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.browser-select-label {
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8a8a8f;
+  cursor: default;
+}
+
+.browser-select {
+  width: 100%;
+  padding: 0.65em 1em;
+  border-radius: 0.75em;
+  border: 1.5px solid rgba(200, 200, 210, 0.5);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.95em;
+  font-family: 'Outfit', sans-serif;
+  color: #2c2c2e;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8a8f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1em center;
+  padding-right: 2.5em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.browser-select:focus {
+  border-color: #1281ff;
+  box-shadow: 0 0 0 3px rgba(18, 129, 255, 0.12);
+  background-color: white;
+}
+
+.browser-select:hover {
+  border-color: rgba(18, 129, 255, 0.4);
 }

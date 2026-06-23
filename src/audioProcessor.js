@@ -30,8 +30,8 @@ async function processAudioChannels(inputPath, outputPath, metadata = {}, binPat
             ffmpegArgs.push('-af', 'pan=stereo|c0=FL+0.707*FC+0.707*BL|c1=FR+0.707*FC+0.707*BR');
             console.log(`[Audio] Source multicanal détectée (${channels} canaux). Application du downmix spatialisé.`);
         } else if (channels === 1) {
-            ffmpegArgs.push('-ac', '1');
-            console.log(`[Audio] Source mono détectée (${inputPath}).`);
+            ffmpegArgs.push('-ac', '2');
+            console.log(`[Audio] Source mono détectée (${inputPath}). Conversion en stéréo.`);
         } else {
             ffmpegArgs.push('-ac', '2');
             console.log(`[Audio] Source stéréo détectée (${inputPath}).`);

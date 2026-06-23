@@ -3,6 +3,10 @@ const pasteBtn = document.getElementById('pasteBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const progressBar = document.getElementById('progressBar');
 const statusLabel = document.getElementById('statusLabel');
+const etaLabel = document.getElementById('etaLabel');
+
+let etaTimer = null;
+let currentEtaSeconds = 0;
 const previewCard = document.getElementById('previewCard');
 const previewThumb = document.getElementById('previewThumb');
 const previewTitle = document.getElementById('previewTitle');
@@ -13,6 +17,7 @@ const versionLabel = document.getElementById('versionLabel');
 const downloadCompleteCard = document.getElementById('downloadCompleteCard');
 const downloadCompleteThumb = document.getElementById('downloadCompleteThumb');
 const downloadCompleteTitle = document.getElementById('downloadCompleteTitle');
+const downloadCompleteArtist = document.getElementById('downloadCompleteArtist');
 const settingsBtn = document.getElementById('settingsBtn'); // New: Reference to the settings button
 const settingsModal = document.getElementById('settingsModal');
 const closeSettings = document.getElementById('closeSettings');
@@ -29,6 +34,7 @@ const videoQualitySelect = document.getElementById('videoQualitySelect');
 const mp3Options = document.getElementById('mp3Options');
 const mp4Options = document.getElementById('mp4Options');
 const checkSubtitles = document.getElementById('checkSubtitles');
+const browserSelect = document.getElementById('browserSelect');
 
 // Localization strings
 const languageStrings = {
@@ -40,6 +46,7 @@ const languageStrings = {
         statusReady: "Prêt à télécharger",
         settingsBtnTitle: "Paramètres généraux",
         menuBtnTitle: "Options de métadonnées",
+        etaRemaining: "Temps restant",
 
         // Options Menu
         checkTitle: "Titre",
@@ -93,7 +100,16 @@ const languageStrings = {
         playlistDownloadComplete: "Téléchargement de la playlist terminé !",
         videos: "vidéos",
         downloadComplete: "Téléchargement terminé ! 🎧",
-        failedDownloadsHeader: "Échecs de téléchargement :"
+        failedDownloadsHeader: "Échecs de téléchargement :",
+
+        // Subtitle consent modal
+        subtitleConsentTitle: "Téléchargement des sous-titres",
+        subtitleConsentDesc: "Pour inclure les sous-titres dans votre vidéo, l'application accède à YouTube via votre navigateur.",
+        subtitleStep1: "Vérifiez que le navigateur sélectionné est installé",
+        subtitleStep2: "Vérifiez que vous êtes connecté à YouTube dans ce navigateur",
+        subtitleConsentWarning: "Sans connexion YouTube dans le navigateur sélectionné, les sous-titres ne seront pas disponibles.",
+        subtitleConsentBtn: "Compris, activer les sous-titres",
+        browserSelectLabel: "Navigateur à utiliser"
     },
     'en': {
         // Main UI
@@ -103,6 +119,7 @@ const languageStrings = {
         statusReady: "Ready to download",
         settingsBtnTitle: "General Settings",
         menuBtnTitle: "Metadata Options",
+        etaRemaining: "Time remaining",
 
         // Options Menu
         checkTitle: "Title",
@@ -156,7 +173,16 @@ const languageStrings = {
         playlistDownloadComplete: "Playlist download complete!",
         videos: "videos",
         downloadComplete: "Download complete! 🎧",
-        failedDownloadsHeader: "Download failures:"
+        failedDownloadsHeader: "Download failures:",
+
+        // Subtitle consent modal
+        subtitleConsentTitle: "Subtitle Download",
+        subtitleConsentDesc: "To embed subtitles in your video, the app accesses YouTube through your browser.",
+        subtitleStep1: "Make sure the selected browser is installed",
+        subtitleStep2: "Make sure you're logged into YouTube in that browser",
+        subtitleConsentWarning: "Without a YouTube login in the selected browser, subtitles won't be available.",
+        subtitleConsentBtn: "Got it, enable subtitles",
+        browserSelectLabel: "Browser to use"
     },
     'es': {
         // Main UI
@@ -166,6 +192,7 @@ const languageStrings = {
         statusReady: "Listo para descargar",
         settingsBtnTitle: "Ajustes generales",
         menuBtnTitle: "Opciones de metadatos",
+        etaRemaining: "Tiempo restante",
 
         // Options Menu
         checkTitle: "Título",
@@ -214,7 +241,17 @@ const languageStrings = {
         // Status messages
         invalidUrl: "URL no válida.",
         downloading: "Descargando...",
-        downloadComplete: "¡Descarga completada! 🎧"
+        downloadComplete: "¡Descarga completada! 🎧",
+
+        // Subtitle consent modal
+        subtitleConsentTitle: "Descarga de subtítulos",
+        subtitleConsentText: "Lo que necesitas:",
+        subtitleConsentDesc: "Para incluir subtítulos en tu video, la aplicación accede a YouTube a través de tu navegador. Elige el que usas para iniciar sesión.",
+        subtitleReq1: "El navegador elegido está instalado",
+        subtitleReq2: "Conectado a YouTube en ese navegador",
+        subtitleConsentWarning: "Sin sesión de YouTube en el navegador seleccionado, los subtítulos no estarán disponibles.",
+        subtitleConsentBtn: "Entendido, activar subtítulos",
+        browserSelectLabel: "Navegador a utilizar"
     },
     'it': {
         // Main UI
@@ -224,6 +261,7 @@ const languageStrings = {
         statusReady: "Pronto per il download",
         settingsBtnTitle: "Impostazioni generali",
         menuBtnTitle: "Opzioni metadati",
+        etaRemaining: "Tempo rimanente",
 
         // Options Menu
         checkTitle: "Titolo",
@@ -272,12 +310,22 @@ const languageStrings = {
         // Status messages (from renderer.js)
         invalidUrl: "URL non valido.",
         clipboardError: "Impossibile leggere dagli appunti (accesso negato?)",
-        downloading: "Download...",
+        downloading: "scaricamento...",
         downloaded: "Scaricato :",
-        playlistDownloadComplete: "Download della playlist completato!",
+        playlistDownloadComplete: "scaricamento della playlist completato!",
         videos: "video",
-        downloadComplete: "Download completato! 🎧",
-        failedDownloadsHeader: "Download falliti :"
+        downloadComplete: "scaricamento completato! 🎧",
+        failedDownloadsHeader: "scaricamento falliti :",
+
+        // Subtitle consent modal
+        subtitleConsentTitle: "Download sottotitoli",
+        subtitleConsentText: "Cosa ti serve:",
+        subtitleConsentDesc: "Per includere i sottotitoli nel video, l'app accede a YouTube tramite il tuo browser. Scegli quello in cui hai effettuato l'accesso.",
+        subtitleReq1: "Il browser scelto è installato",
+        subtitleReq2: "Connesso a YouTube in quel browser",
+        subtitleConsentWarning: "Senza una sessione YouTube nel browser selezionato, i sottotitoli non saranno disponibili.",
+        subtitleConsentBtn: "Capito, attiva i sottotitoli",
+        browserSelectLabel: "Browser da utilizzare"
     },
     'de': {
         // Main UI
@@ -287,6 +335,7 @@ const languageStrings = {
         statusReady: "Bereit zum Herunterladen",
         settingsBtnTitle: "Allgemeine Einstellungen",
         menuBtnTitle: "Metadaten-Optionen",
+        etaRemaining: "Verbleibende Zeit",
 
         // Options Menu
         checkTitle: "Titel",
@@ -340,7 +389,17 @@ const languageStrings = {
         playlistDownloadComplete: "Playlist-Download abgeschlossen!",
         videos: "Videos",
         downloadComplete: "Download abgeschlossen! 🎧",
-        failedDownloadsHeader: "Fehlgeschlagene Downloads :"
+        failedDownloadsHeader: "Fehlgeschlagene Downloads :",
+
+        // Subtitle consent modal
+        subtitleConsentTitle: "Untertitel-Download",
+        subtitleConsentText: "Was Sie benötigen:",
+        subtitleConsentDesc: "Um Untertitel einzubetten, greift die App über Ihren Browser auf YouTube zu. Wählen Sie den Browser, in dem Sie angemeldet sind.",
+        subtitleReq1: "Der gewählte Browser ist installiert",
+        subtitleReq2: "Bei YouTube in diesem Browser angemeldet",
+        subtitleConsentWarning: "Ohne YouTube-Sitzung im ausgewählten Browser sind keine Untertitel verfügbar.",
+        subtitleConsentBtn: "Verstanden, Untertitel aktivieren",
+        browserSelectLabel: "Zu verwendender Browser"
     },
     'ru': {
         // Main UI
@@ -350,6 +409,7 @@ const languageStrings = {
         statusReady: "Готов к скачиванию",
         settingsBtnTitle: "Общие настройки",
         menuBtnTitle: "Опции метаданных",
+        etaRemaining: "Оставшееся время",
 
         // Options Menu
         checkTitle: "Название",
@@ -403,7 +463,16 @@ const languageStrings = {
         playlistDownloadComplete: "Загрузка плейлиста завершена!",
         videos: "Видео",
         downloadComplete: "Загрузка завершена! 🎧",
-        failedDownloadsHeader: "Не удалось загрузить :"
+        failedDownloadsHeader: "Не удалось загрузить :",
+
+        // Subtitle consent modal
+        subtitleConsentTitle: "Загрузка субтитров",
+        subtitleConsentText: "Что вам нужно:",
+        subtitleConsentDesc: "Чтобы включить субтитры в видео, приложение должно получить доступ к YouTube через ваш аккаунт Chrome.",
+        subtitleReq1: "Chrome установлен на вашем компьютере",
+        subtitleReq2: "Вы вошли в YouTube в Chrome",
+        subtitleConsentWarning: "Без сессии YouTube в Chrome субтитры будут недоступны.",
+        subtitleConsentBtn: "Понятно, включить субтитры"
     },
     'ja': {
         // Main UI
@@ -413,6 +482,7 @@ const languageStrings = {
         statusReady: "ダウンロード準備完了",
         settingsBtnTitle: "一般設定",
         menuBtnTitle: "メタデータオプション",
+        etaRemaining: "残り時間",
 
         // Options Menu
         checkTitle: "タイトル",
@@ -465,7 +535,17 @@ const languageStrings = {
         playlistDownloadComplete: "プレイリストのダウンロードが完了しました！",
         videos: "動画",
         downloadComplete: "ダウンロード完了！ 🎧",
-        failedDownloadsHeader: "ダウンロードに失敗しました："
+        failedDownloadsHeader: "ダウンロードに失敗しました：",
+
+        // Subtitle consent modal
+        subtitleConsentTitle: "字幕のダウンロード",
+        subtitleConsentText: "必要なもの：",
+        subtitleConsentDesc: "字幕を動画に含めるには、アプリがブラウザでYouTubeにアクセスします。ログイン済みのブラウザを選んでください。",
+        subtitleReq1: "選択したブラウザがインストール済み",
+        subtitleReq2: "そのブラウザでYouTubeにログイン済み",
+        subtitleConsentWarning: "選択したブラウザでYouTubeにログインしていない場合、字幕は利用できません。",
+        subtitleConsentBtn: "了解、字幕を有効にする",
+        browserSelectLabel: "使用するブラウザ"
     }
 
 };
@@ -519,9 +599,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tosBtn = document.getElementById('tosBtn');
         const acceptedVersion = localStorage.getItem('acceptedVersion');
 
-        // Si la version enregistrée diffère de la version actuelle, on affiche l'overlay
-        if (acceptedVersion !== version) {
-            // First, show the language selection overlay
+        // Vérifier si la langue a déjà été choisie (uniquement à la première installation)
+        const languageInitialized = localStorage.getItem('languageInitialized');
+        if (!languageInitialized) {
+            // First, show the language selection overlay (only on very first launch)
             languageSelectionOverlay.style.display = 'flex';
             container.classList.add('blurred');
 
@@ -539,6 +620,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             confirmLanguageBtn?.addEventListener('click', () => {
                 languageSelectionOverlay.style.display = 'none';
+                // Marquer la langue comme choisie pour ne plus jamais la demander
+                localStorage.setItem('languageInitialized', 'true');
                 // Then, show the TOS overlay
                 tosOverlay.style.display = 'flex';
                 // Apply translations to the TOS overlay now that language is chosen
@@ -561,6 +644,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tosOverlay.querySelectorAll('a').forEach(link => {
                     link.addEventListener('click', (e) => { e.preventDefault(); window.api.openExternal(link.href); });
                 });
+            });
+        } else if (acceptedVersion !== version) {
+            // Version change after first launch: only show TOS overlay (no language selection)
+            tosOverlay.style.display = 'flex';
+            container.classList.add('blurred');
+            applyTranslations();
+
+            const updateTOSBtn = () => {
+                tosBtn.disabled = !(checkPrivacy.checked && checkConditions.checked);
+            };
+
+            checkPrivacy.addEventListener('change', updateTOSBtn);
+            checkConditions.addEventListener('change', updateTOSBtn);
+            updateTOSBtn(); // Initial check
+
+            tosBtn.addEventListener('click', () => {
+                localStorage.setItem('acceptedVersion', version);
+                tosOverlay.style.display = 'none';
+                container.classList.remove('blurred');
+            });
+
+            tosOverlay.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', (e) => { e.preventDefault(); window.api.openExternal(link.href); });
             });
         } else {
             // If TOS already accepted, just apply translations to the whole UI
@@ -585,6 +691,53 @@ menuBtn.addEventListener('click', (e) => { // Existing event listener for the op
     optionsMenu.classList.toggle('show');
 });
 menuBtn.title = _t('menuBtnTitle');
+
+// --- Gestion du consentement pour les sous-titres ---
+const subtitleConsentModal = document.getElementById('subtitleConsentModal');
+const subtitleConsentBtn = document.getElementById('subtitleConsentBtn');
+const closeSubtitleConsent = document.getElementById('closeSubtitleConsent');
+const subtitleWrapper = document.getElementById('subtitleWrapper');
+
+if (checkSubtitles && subtitleConsentModal) {
+
+    // Quand on coche la checkbox, toujours afficher le modal d'information
+    checkSubtitles.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            // L'utilisateur active les sous-titres : on annule et on montre le modal
+            checkSubtitles.checked = false;
+            subtitleConsentModal.classList.add('show');
+            container.classList.add('blurred');
+        }
+    });
+
+    // Bouton "D'accord" pour accepter et activer les sous-titres
+    if (subtitleConsentBtn) {
+        subtitleConsentBtn.addEventListener('click', () => {
+            checkSubtitles.checked = true;
+            saveSettings();
+            subtitleConsentModal.classList.remove('show');
+            container.classList.remove('blurred');
+        });
+    }
+
+    // Bouton de fermeture (X)
+    if (closeSubtitleConsent) {
+        closeSubtitleConsent.addEventListener('click', () => {
+            checkSubtitles.checked = false;
+            subtitleConsentModal.classList.remove('show');
+            container.classList.remove('blurred');
+        });
+    }
+
+    // Fermer en cliquant sur l'overlay
+    subtitleConsentModal.addEventListener('click', (e) => {
+        if (e.target === subtitleConsentModal) {
+            checkSubtitles.checked = false;
+            subtitleConsentModal.classList.remove('show');
+            container.classList.remove('blurred');
+        }
+    });
+}
 
 settingsBtn.addEventListener('click', (e) => { // New event listener for the settings button
     settingsModal.classList.add('show');
@@ -640,11 +793,11 @@ function loadSettings() {
     // Initialiser le choix pour les mises à jour auto au backend
     const disableAutoUpdatesCheckbox = document.getElementById('disableAutoUpdates');
     if (disableAutoUpdatesCheckbox && window.api && window.api.setAutoUpdatePreference) {
-        // Attention : si la case s'appelle "Rechercher automatiquement" mais a pour ID "disableAutoUpdates",
-        // il se peut que la logique soit inversée. Actuellement on envoie l'état tel quel.
-        // On force un petit délai pour être sûr que le main process écoute
+        // La checkbox s'appelle "Rechercher les mises à jour automatiquement"
+        // mais a pour ID "disableAutoUpdates". L'utilisateur coche pour activer,
+        // donc on envoie l'INVERSE : checked == false → désactivé
         setTimeout(() => {
-            window.api.setAutoUpdatePreference(disableAutoUpdatesCheckbox.checked);
+            window.api.setAutoUpdatePreference(!disableAutoUpdatesCheckbox.checked);
         }, 500);
     }
 }
@@ -705,6 +858,30 @@ function handleLanguageChange() {
     applyTranslations();
 }
 
+// Helper pour mettre à jour le texte d'un label de checkbox de manière robuste
+function setLabelText(checkboxId, text) {
+    const el = document.getElementById(checkboxId);
+    if (!el) return;
+    const label = el.closest('label');
+    if (!label) return;
+    for (const node of label.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            node.textContent = ' ' + text;
+            break;
+        }
+    }
+}
+
+// Helper pour mettre à jour le texte d'une option dans les paramètres
+function setSettingsOptionText(selectorId, text) {
+    const el = document.getElementById(selectorId);
+    if (!el) return;
+    const optionEl = el.closest('.settings-option');
+    if (!optionEl) return;
+    const textEl = optionEl.querySelector('.option-text');
+    if (textEl) textEl.textContent = text;
+}
+
 // Function to apply translations to the UI
 function applyTranslations() {
     // Main UI
@@ -715,20 +892,20 @@ function applyTranslations() {
     settingsBtn.title = _t('settingsBtnTitle');
     menuBtn.title = _t('menuBtnTitle');
 
-    // Options Menu
-    document.getElementById('checkTitle').nextSibling.textContent = _t('checkTitle');
-    document.getElementById('checkArtist').nextSibling.textContent = _t('checkArtist');
-    document.getElementById('checkAlbum').nextSibling.textContent = _t('checkAlbum');
-    document.getElementById('checkDate').nextSibling.textContent = _t('checkDate');
-    document.getElementById('checkTrack').nextSibling.textContent = _t('checkTrack');
-    document.getElementById('checkThumb').nextSibling.textContent = _t('checkThumb');
-    document.getElementById('checkPlaylistThumb').nextSibling.textContent = _t('checkPlaylistThumb');
-    document.getElementById('checkLyrics').nextSibling.textContent = _t('checkLyrics');
+    // Options Menu (utilisation de la fonction helper robuste)
+    setLabelText('checkTitle', _t('checkTitle'));
+    setLabelText('checkArtist', _t('checkArtist'));
+    setLabelText('checkAlbum', _t('checkAlbum'));
+    setLabelText('checkDate', _t('checkDate'));
+    setLabelText('checkTrack', _t('checkTrack'));
+    setLabelText('checkThumb', _t('checkThumb'));
+    setLabelText('checkPlaylistThumb', _t('checkPlaylistThumb'));
+    setLabelText('checkLyrics', _t('checkLyrics'));
 
-    // Settings Modal
+    // Settings Modal (utilisation de la fonction helper robuste)
     document.querySelector('#settingsModal .modal-header h3').textContent = _t('settingsModalTitle');
-    document.querySelector('.settings-option #disableAutoUpdates').closest('.settings-option').querySelector('.option-text').textContent = _t('autoUpdateSetting');
-    document.querySelector('.settings-option #languageSelect').closest('.settings-option').querySelector('.option-text').textContent = _t('languageSetting');
+    setSettingsOptionText('disableAutoUpdates', _t('autoUpdateSetting'));
+    setSettingsOptionText('languageSelect', _t('languageSetting'));
 
     // Initial Language Selection Overlay
     if (languageSelectionOverlay) {
@@ -757,6 +934,26 @@ function applyTranslations() {
     document.getElementById('labelConditions').innerHTML = _t('tosConditions');
     document.getElementById('tosBtn').textContent = _t('tosValidate');
 
+    // Subtitle consent modal
+    if (document.getElementById('subtitleConsentTitle')) {
+        document.getElementById('subtitleConsentTitle').textContent = _t('subtitleConsentTitle');
+    }
+    if (document.getElementById('subtitleConsentDesc')) {
+        document.getElementById('subtitleConsentDesc').textContent = _t('subtitleConsentDesc');
+    }
+    if (document.getElementById('subtitleStep1')) {
+        document.getElementById('subtitleStep1').textContent = _t('subtitleStep1');
+    }
+    if (document.getElementById('subtitleStep2')) {
+        document.getElementById('subtitleStep2').textContent = _t('subtitleStep2');
+    }
+    if (document.getElementById('subtitleConsentWarning')) {
+        document.getElementById('subtitleConsentWarning').textContent = _t('subtitleConsentWarning');
+    }
+    if (document.getElementById('subtitleConsentBtn')) {
+        document.getElementById('subtitleConsentBtn').textContent = _t('subtitleConsentBtn');
+    }
+
     // Set language select value
     if (languageSelect) languageSelect.value = currentLanguage;
 }
@@ -765,7 +962,7 @@ function applyTranslations() {
 const disableAutoUpdatesCheckbox = document.getElementById('disableAutoUpdates');
 if (disableAutoUpdatesCheckbox) {
     disableAutoUpdatesCheckbox.addEventListener('change', saveSettings);
-    disableAutoUpdatesCheckbox.addEventListener('change', () => window.api.setAutoUpdatePreference(disableAutoUpdatesCheckbox.checked));
+    disableAutoUpdatesCheckbox.addEventListener('change', () => window.api.setAutoUpdatePreference(!disableAutoUpdatesCheckbox.checked));
 }
 
 // Mise à jour de la visibilité de la sous-option playlist
@@ -832,7 +1029,7 @@ urlInput.addEventListener('input', () => {
                 isCurrentPlaylist = !!info.isPlaylist;
 
                 previewMeta.textContent = isCurrentPlaylist
-                    ? (info.count ? `${info.count} ${_t('titlesCount')}` : _t('playlistDetected'))
+                    ? (info.count !== null && info.count !== undefined ? `${info.count} ${_t('titlesCount')}` : _t('playlistDetected'))
                     : `${info.uploader}${info.duration ? ` • ${info.duration}` : ""}`;
 
                 updatePlaylistOptionVisibility();
@@ -883,6 +1080,7 @@ downloadBtn.addEventListener('click', async () => {
         format: document.querySelector('input[name="format"]:checked').value,
         videoQuality: document.getElementById('videoQualitySelect')?.value || 'best',
         subtitles: document.getElementById('checkSubtitles')?.checked ?? false,
+        subtitlesBrowser: document.getElementById('browserSelect')?.value || 'chrome',
         title: document.getElementById('checkTitle')?.checked ?? true,
         artist: document.getElementById('checkArtist')?.checked ?? true,
         album: document.getElementById('checkAlbum')?.checked ?? true,
@@ -906,10 +1104,64 @@ window.api.onStatus((text, color) => {
     updateStatus(text, type);
 });
 
-window.api.onProgress((percent, completed, total) => {
+window.api.onProgress((percent, completed, total, eta) => {
     progressBar.style.width = `${percent}%`;
-    updateStatus(`${_t('downloaded')} ${completed}/${total}`, 'info');
+    updateStatus(`${Math.round(percent)}%`, 'info');
+
+    if (eta && eta > 0) {
+        // Nouvelle estimation valide
+        currentEtaSeconds = Math.round(eta);
+        updateEtaDisplay();
+        startEtaTimer();
+    } else if (currentEtaSeconds > 0 && percent < 100) {
+        // Pas de nouvelle estimation mais on a un ETA en cours : ne pas l'effacer
+        // Le timer continue de tourner et de décrémenter
+        startEtaTimer();
+    }
+    // Si percent === 100, on laisse onFinish gérer le nettoyage
 });
+
+function startEtaTimer() {
+    stopEtaTimer();
+    etaTimer = setInterval(() => {
+        if (currentEtaSeconds > 1) {
+            currentEtaSeconds--;
+            updateEtaDisplay();
+        } else if (currentEtaSeconds === 1) {
+            // Ne jamais descendre à 0 tant que le téléchargement n'est pas terminé
+            currentEtaSeconds = 1;
+            updateEtaDisplay();
+        }
+        // Le timer continue de tourner mais ne descend jamais en dessous de 1
+    }, 1000);
+}
+
+function stopEtaTimer() {
+    if (etaTimer) {
+        clearInterval(etaTimer);
+        etaTimer = null;
+    }
+}
+
+function updateEtaDisplay() {
+    if (currentEtaSeconds <= 0) {
+        // Ne devrait plus arriver grâce au clamp, mais sécurité
+        etaLabel.textContent = `${_t('etaRemaining')} : 1s`;
+        return;
+    }
+    const hours = Math.floor(currentEtaSeconds / 3600);
+    const mins = Math.floor((currentEtaSeconds % 3600) / 60);
+    const secs = currentEtaSeconds % 60;
+    let text = `${_t('etaRemaining')} : `;
+    if (hours > 0) {
+        text += `${hours}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
+    } else if (mins > 0) {
+        text += `${mins}m ${secs.toString().padStart(2, '0')}s`;
+    } else {
+        text += `${secs}s`;
+    }
+    etaLabel.textContent = text;
+}
 
 window.api.onComplete((result) => { // result contient maintenant lastDownloaded
     progressBar.style.width = '100%';
@@ -922,8 +1174,8 @@ window.api.onComplete((result) => { // result contient maintenant lastDownloaded
     } else {
         text = _t('downloadComplete');
         if (result.lastDownloaded && downloadCompleteCard) {
-            downloadCompleteTitle.textContent = result.lastDownloaded.title;
-            downloadCompleteArtist.textContent = result.lastDownloaded.artist;
+            if (downloadCompleteTitle) downloadCompleteTitle.textContent = result.lastDownloaded.title;
+            if (downloadCompleteArtist) downloadCompleteArtist.textContent = result.lastDownloaded.artist;
             // Note: Afficher la miniature locale nécessiterait une gestion spécifique (ex: base64)
             // downloadCompleteThumb.src = result.lastDownloaded.thumbnail;
             downloadCompleteCard.style.display = 'flex'; // Afficher la carte
@@ -944,7 +1196,7 @@ window.api.onComplete((result) => { // result contient maintenant lastDownloaded
             const card = document.createElement('div');
             card.className = 'preview-card failure-card';
             card.innerHTML = `
-                <img class="preview-thumb" src="${fail.thumbnail}" alt="" onerror="this.src='../assets/icon.png'">
+                <img class="preview-thumb" src="${fail.thumbnail}" alt="" onerror="this.src='../icon.png'">
                 <div class="preview-info">
                     <p class="preview-title">${fail.title}</p> <!-- Title is dynamic -->
                     <p class="preview-meta">${_t('videoPrefix')}${fail.index} • ${_t('notAvailable')}</p>
@@ -962,6 +1214,8 @@ window.api.onError((msg) => {
 });
 
 window.api.onFinish(() => {
+    stopEtaTimer();
+    etaLabel.textContent = '';
     downloadBtn.style.display = 'flex';
     downloadBtn.classList.remove('loading');
     downloadBtn.querySelector('span').textContent = _t('downloadBtnText');

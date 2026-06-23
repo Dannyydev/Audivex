@@ -1,9 +1,9 @@
-const { execFile } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const { app } = require('electron');
-const { processAudioChannels } = require('./audioProcessor'); // Importez le nouveau module
-const NodeID3 = require('node-id3'); // Outil spécialisé pour les tags ID3
+const { processAudioChannels } = require('./audioProcessor');
+const NodeID3 = require('node-id3');
 
 class DownloadHandler {
 
@@ -15,10 +15,14 @@ class DownloadHandler {
     this.onComplete = onComplete;
     this.onItemSuccess = onItemSuccess;
     this.options = {
-      usePlaylistThumbnail: false, // Par défaut, utilise la miniature de chaque titre
+      usePlaylistThumbnail: false,
       ...options
     };
     this.playlistCoverPath = null;
+    this.etaHistory = [];
+    this.smoothedEta = 0;
+    this.lastEtaUpdate = 0;
+    this.maxProgress = 0; // Track maximum progress to prevent backward jumps
 
     const resourcePath = app.isPackaged
       ? path.join(process.resourcesPath, 'bin')
@@ -43,6 +47,7 @@ class DownloadHandler {
 
     try {
 
+      this.downloadStartTime = Date.now();
       this.sendUpdate('status', "Préparation en cours...", '#0984e3');
 
       const info = await this.runCommand(this.ytDlpPath, [
@@ -51,29 +56,28 @@ class DownloadHandler {
         '--flat-playlist',
         '--yes-playlist',
         '--ignore-errors',
-        '--no-warnings'
+        '--no-warnings',
+        '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        '--extractor-args', 'youtube:player_client=web,android,mweb',
+        '--no-check-certificates',
+        '--geo-bypass',
       ]);
 
       const data = JSON.parse(info);
 
-      // Une playlist peut être identifiée par son type ou par la présence d'entrées multiples
       const isPlaylist = data._type === 'playlist' || (data.entries && data.entries.length > 1);
       console.log(`[Start] Playlist détectée: ${isPlaylist}, Entries: ${data.entries?.length || 0}, Type: ${data._type}`);
 
-      // Si c'est une playlist et que l'utilisateur veut la miniature globale
       if (isPlaylist && this.options.thumbnail !== false && this.options.usePlaylistThumbnail) {
-        // Stratégie robuste pour trouver la pochette de l'album/playlist
         let thumbUrl = data.thumbnail;
 
         if (!thumbUrl && data.thumbnails && data.thumbnails.length > 0) {
-          // Tri pour obtenir la plus haute résolution possible
           const sortedThumbs = [...data.thumbnails].sort((a, b) =>
             ((b.width || 0) * (b.height || 0)) - ((a.width || 0) * (a.height || 0))
           );
           thumbUrl = sortedThumbs[0].url;
         }
 
-        // Fallback pour YouTube Music / Playlists où la miniature est dans les entries
         if (!thumbUrl && data.entries && data.entries[0]) {
           const first = data.entries[0];
           const thumbs = first.thumbnails || [];
@@ -88,7 +92,6 @@ class DownloadHandler {
           this.sendUpdate('status', "Téléchargement de la miniature de la playlist...", '#0984e3');
           const tempPath = path.join(this.folder, `playlist_cover_${Date.now()}.jpg`);
           try {
-            // Ajout d'un User-Agent pour éviter d'être bloqué par YouTube
             const response = await fetch(thumbUrl, {
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -116,25 +119,26 @@ class DownloadHandler {
       this.sendUpdate('status', total > 1 ? `Playlist de ${total} vidéos trouvée.` : 'Vidéo trouvée.', '#0984e3');
 
       let processed = 0;
-      let successCount = 0; // Compteur de succès
+      let successCount = 0;
+      let lastSuccessfulMetadata = null;
       const failures = [];
 
       const CONCURRENCY_LIMIT = 4;
-      
+
       let currentIndex = 0;
       const workers = [];
-      
+
       const worker = async () => {
         while (currentIndex < total) {
           const idx = currentIndex++;
           const entry = entries[idx];
-          const index = idx + 1; // 1-based indexing for display
+          const index = idx + 1;
 
           try {
-            const itemResult = await this.processItem(index, isPlaylist, entry, data.title);
+            const itemResult = await this.processItem(index, isPlaylist, entry, data.title, total);
             successCount++;
-            if (this.onItemSuccess) this.onItemSuccess(); // Signalement en temps réel
-            if (!isPlaylist || total === 1) { // Si c'est un téléchargement unique ou une playlist d'un seul élément
+            if (this.onItemSuccess) this.onItemSuccess();
+            if (!isPlaylist || total === 1) {
               lastSuccessfulMetadata = itemResult;
             }
           } catch (err) {
@@ -144,11 +148,8 @@ class DownloadHandler {
               index: index,
               thumbnail: entry.thumbnail || (entry.thumbnails && entry.thumbnails[0]?.url) || ''
             });
-          } finally {
-            processed++;
-            const percent = (processed / total) * 100;
-            this.sendUpdate('progress', percent, processed, total);
           }
+          processed++;
         }
       };
 
@@ -162,44 +163,97 @@ class DownloadHandler {
         this.sendUpdate('complete', { isPlaylist: total > 1, total: successCount, lastDownloaded: lastSuccessfulMetadata, failures: [] });
       } else {
         if (successCount > 0) {
-          // Succès partiel : on informe sans bloquer visuellement la fin
           const msg = `${successCount} terminés, ${failures.length} échec(s).`;
-          this.sendUpdate('status', msg, '#e67e22'); // Couleur orange (warning)
+          this.sendUpdate('status', msg, '#e67e22');
           this.sendUpdate('complete', { isPlaylist: total > 1, total: successCount, lastDownloaded: lastSuccessfulMetadata, failures: failures });
         } else {
-          // Échec total
           this.sendUpdate('error', `${failures.length} échecs. Premier : ${failures[0].title}`);
         }
       }
 
     } catch (e) {
-
       console.error(e);
       this.sendUpdate('error', `Erreur: ${e.message}`);
-
     } finally {
-      // Nettoyage de la miniature de playlist globale
       if (this.playlistCoverPath) {
         await this.safeUnlink(this.playlistCoverPath);
       }
-
       this.sendUpdate('finish');
-
     }
-
   }
 
-  async processItem(index, isPlaylist, entry, playlistTitle) {
+  // Envoie la progression pour une étape d'un item (0.0 à 1.0 par item)
+  sendItemProgress(index, total, stepProgress) {
+    // Pour les playlists : progression cumulative globale (0-100% sur toute la playlist)
+    // Pour un seul téléchargement : progression de l'item (0-100%)
+    const globalPercent = total > 1
+      ? ((index - 1) / total) * 100 + (stepProgress * 100 / total)
+      : stepProgress * 100;
+
+    // Ne jamais descendre en dessous du progrès maximum atteint (workers concurrents)
+    const finalPercent = Math.max(globalPercent, this.maxProgress);
+    this.maxProgress = finalPercent;
+
+    // Calcul de l'ETA avec lissage exponentiel et fenêtre glissante
+    let etaSeconds = 0;
+    if (this.downloadStartTime && finalPercent >= 2) {
+      const now = Date.now();
+
+      // Throttle: ne pas mettre à jour l'ETA plus d'une fois par 1 seconde
+      if (now - this.lastEtaUpdate < 1000 && this.smoothedEta > 0) {
+        etaSeconds = Math.round(this.smoothedEta);
+      } else {
+        this.lastEtaUpdate = now;
+        const elapsed = (now - this.downloadStartTime) / 1000;
+
+        // Garder seulement l'historique des 15 dernières secondes
+        this.etaHistory = this.etaHistory.filter(p => (now - p.time) < 15000);
+        this.etaHistory.push({ time: now, progress: finalPercent });
+
+        // Besoin d'au moins 2 points pour une estimation
+        if (this.etaHistory.length >= 2) {
+          const recent = this.etaHistory.slice(-3);
+          const oldest = recent[0];
+          const newest = recent[recent.length - 1];
+          const timeDiff = (newest.time - oldest.time) / 1000;
+          const progressDiff = newest.progress - oldest.progress;
+
+          if (timeDiff >= 0.5 && progressDiff >= 0.5) {
+            const rate = progressDiff / timeDiff;
+            const remaining = 100 - finalPercent;
+            const rawEta = remaining / rate;
+
+            // Lissage exponentiel (alpha = 0.3)
+            const alpha = 0.3;
+            const previousEta = this.smoothedEta;
+            this.smoothedEta = this.smoothedEta === 0 ? rawEta : (alpha * rawEta + (1 - alpha) * this.smoothedEta);
+
+            // Clamp: ne pas changer l'ETA de plus de 40% d'un coup
+            if (previousEta > 0 && this.smoothedEta > 0) {
+              const maxChange = previousEta * 0.4;
+              const minAllowed = previousEta - maxChange;
+              const maxAllowed = previousEta + maxChange;
+              this.smoothedEta = Math.max(minAllowed, Math.min(maxAllowed, this.smoothedEta));
+            }
+
+            etaSeconds = Math.max(0, Math.round(this.smoothedEta));
+          }
+        }
+      }
+    }
+
+    this.sendUpdate('progress', Math.min(finalPercent, 100), index, total, etaSeconds);
+  }
+
+  async processItem(index, isPlaylist, entry, playlistTitle, total = 1) {
     const isMp4 = this.options.format === 'mp4';
-    
-    // Utilisation impérative de %(id)s pour éviter les erreurs de système de fichiers Windows
+
     const extTemplate = isMp4 ? 'mp4' : '%(ext)s';
     const rawAudioTemplate = path.join(
       this.folder,
       `${String(index).padStart(3, '0')}_%(id)s.${extTemplate}`
     );
 
-    // On utilise l'URL directe de la vidéo (via son ID) pour isoler les métadonnées
     const videoUrl = (isPlaylist && entry?.id) ? `https://www.youtube.com/watch?v=${entry.id}` : this.url;
 
     let finalDest = "";
@@ -207,6 +261,17 @@ class DownloadHandler {
     const ytDlpArgs = [
       videoUrl,
       '--ffmpeg-location', this.ffmpegPath,
+      '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      '--extractor-args', 'youtube:player_client=web,android,mweb',
+      '--no-check-certificates',
+      '--no-warnings',
+      '--sleep-interval', '2',
+      '--max-sleep-interval', '5',
+      '--retries', '10',
+      '--fragment-retries', '10',
+      '--concurrent-fragments', '1',
+      '--force-ipv4',
+      '--referer', 'https://www.youtube.com/',
     ];
 
     if (isMp4) {
@@ -214,9 +279,12 @@ class DownloadHandler {
       const formatStr = q === 'best' ? 'bestvideo+bestaudio/best' : `bestvideo[height<=${q}]+bestaudio/best`;
       ytDlpArgs.push('-f', formatStr, '--merge-output-format', 'mp4');
       ytDlpArgs.push('--windows-filenames', '--no-mtime', '-o', rawAudioTemplate);
-      
-      if (this.options.subtitles) {
-        ytDlpArgs.push('--write-subs', '--write-auto-subs', '--sub-langs', 'all,-live_chat', '--embed-subs');
+
+      // ⚠️ Les cookies du navigateur ne sont utilisés QUE si format MP4 ET sous-titres cochés
+      if (isMp4 && this.options.subtitles === true) {
+        ytDlpArgs.push('--write-subs', '--write-auto-subs', '--embed-subs', '--ignore-errors');
+        const browser = this.options.subtitlesBrowser || 'chrome';
+        ytDlpArgs.push('--cookies-from-browser', browser);
       }
     } else {
       ytDlpArgs.push(
@@ -228,39 +296,55 @@ class DownloadHandler {
         '--no-mtime',
         '-o', rawAudioTemplate
       );
-      // On télécharge la miniature par track si l'option est cochée
       if (this.options.thumbnail && (!isPlaylist || !this.options.usePlaylistThumbnail || !this.playlistCoverPath)) {
         ytDlpArgs.push('--write-thumbnail', '--convert-thumbnails', 'jpg');
       }
     }
 
     try {
-      // 1. Téléchargement
-      await this.runCommand(this.ytDlpPath, ytDlpArgs);
-
-      const files = await fs.readdir(this.folder);
-      const currentId = entry.id || '';
-
       if (isMp4) {
+        // === ÉTAPES MP4 ===
+        // Étape 1/5 : Téléchargement
+        this.sendItemProgress(index, total, 0.05);
+        await this.runCommand(this.ytDlpPath, ytDlpArgs);
+        this.sendItemProgress(index, total, 0.40);
+
+        const files = await fs.readdir(this.folder);
+        const currentId = entry.id || '';
+
         const mp4File = files.find(f => f.includes(currentId) && f.endsWith('.mp4'));
         if (!mp4File) throw new Error(`Fichier vidéo non trouvé pour ${videoUrl}`);
 
         const fullRawPath = path.join(this.folder, mp4File);
-        
-        // Nettoyage basique des noms
+
+        // Étape 2/5 : Métadonnées
+        this.sendItemProgress(index, total, 0.50);
         const rawTitle = entry.title || `Vidéo ${index}`;
         const rawArtist = entry.uploader || entry.channel || '';
         const cleaned = this.cleanMetadata(rawTitle, rawArtist);
-        
+
+        // Étape 3/5 : Paroles (si coché)
+        if (this.options.lyrics) {
+          this.sendItemProgress(index, total, 0.60);
+          try {
+            await this.fetchLyricsData(cleaned.title, cleaned.artist, 0);
+          } catch (_) { /* silencieux */ }
+        }
+
+        // Étape 4/5 : Renommage final
+        this.sendItemProgress(index, total, 0.85);
         const finalBaseName = (cleaned.artist && cleaned.title)
           ? `${cleaned.artist} - ${cleaned.title}`
           : (cleaned.title || `Vidéo ${index}`);
-        
+
         const safeFinalName = finalBaseName.replace(/[\\/:*?"<>|]/g, '_').trim() + '.mp4';
         finalDest = path.join(this.folder, safeFinalName);
-        
+
         await fs.rename(fullRawPath, finalDest);
-        
+
+        // Terminé
+        this.sendItemProgress(index, total, 1.0);
+
         return {
           title: cleaned.title,
           artist: cleaned.artist,
@@ -269,29 +353,34 @@ class DownloadHandler {
         };
 
       } else {
-        // --- LOGIQUE MP3 ---
+        // === ÉTAPES MP3 ===
+        // Étape 1/7 : Téléchargement audio
+        this.sendItemProgress(index, total, 0.10);
+        await this.runCommand(this.ytDlpPath, ytDlpArgs);
+        this.sendItemProgress(index, total, 0.30);
+
+        const files = await fs.readdir(this.folder);
+        const currentId = entry.id || '';
+
         const rawAudioFile = files.find(f => f.includes(currentId) && !f.endsWith('.mp3') && !f.endsWith('.json') && !['.jpg', '.webp', '.png'].some(ext => f.endsWith(ext)));
         const infoJsonFile = files.find(f => f.includes(currentId) && f.endsWith('.info.json'));
 
         if (!rawAudioFile) throw new Error(`Fichier audio non trouvé pour ${videoUrl}`);
 
-        // Détermination de la miniature à utiliser :
+        // Étape 2/7 : Métadonnées + Paroles
+        this.sendItemProgress(index, total, 0.35);
         let actualThumbPath = this.resolveThumbnailPath(files, currentId, isPlaylist);
 
-        // Stratégie de repli pour la miniature de playlist
         if (isPlaylist && this.options.usePlaylistThumbnail && !this.playlistCoverPath && actualThumbPath) {
           try {
             const fallbackPath = path.join(this.folder, `playlist_cover_fallback_${Date.now()}.jpg`);
             await fs.copyFile(actualThumbPath, fallbackPath);
             this.playlistCoverPath = fallbackPath;
-            console.log(`[Thumbnail Fallback] Pochette du titre utilisée comme pochette de playlist : ${this.playlistCoverPath}`);
             actualThumbPath = this.playlistCoverPath;
           } catch (err) {
-            console.error("[Thumbnail Fallback] Erreur lors de la création du fallback :", err);
+            console.error("[Thumbnail Fallback] Erreur :", err);
           }
         }
-
-        console.log(`[Thumbnail Debug] Utilisation de la miniature : ${actualThumbPath}`);
 
         let metadata = { title: entry.title || '', artist: '' };
 
@@ -300,20 +389,17 @@ class DownloadHandler {
             metadata = await this.extractAndCleanMetadata(infoJsonFile, index, playlistTitle);
             const raw = metadata._raw;
 
-            console.log(`[Lyrics Debug] Option 'Paroles' activée: ${this.options.lyrics}`);
             if (this.options.lyrics && raw.title && raw.artist) {
-              console.log(`[Lyrics Debug] Tentative de récupération des paroles pour: "${raw.title}" par "${raw.artist}" (Durée: ${raw.duration}s)`);
+              this.sendItemProgress(index, total, 0.45);
               const lyricsData = await this.fetchLyricsData(raw.title, raw.artist, raw.duration);
               if (lyricsData) {
-                console.log(`[Lyrics Debug] Paroles récupérées avec succès (Synced: ${!!lyricsData.synced}, Plain: ${!!lyricsData.plain}).`);
                 if (lyricsData.artistName && lyricsData.artistName !== raw.artist && this.options.artist) {
                   metadata.artist = lyricsData.artistName;
                 }
                 metadata.lyrics = lyricsData.synced || lyricsData.plain;
                 metadata.plainLyrics = lyricsData.plain || lyricsData.synced;
-              } else { console.log(`[Lyrics Debug] Aucune parole trouvée.`); }
+              }
             }
-
           } catch (err) { console.error("Metadata error:", err); }
         }
 
@@ -321,22 +407,24 @@ class DownloadHandler {
         const mp3BaseName = path.basename(rawAudioFile, path.extname(rawAudioFile));
         const fullMp3Path = path.join(this.folder, `${mp3BaseName}.mp3`);
 
-        // 2. Conversion MP3 + Canaux + Métadonnées
+        // Étape 3/7 : Conversion MP3 + Canaux
+        this.sendItemProgress(index, total, 0.55);
         await processAudioChannels(fullRawPath, fullMp3Path, metadata, {
           ffmpegPath: this.ffmpegPath,
           ffprobePath: this.ffprobePath
         });
+        this.sendItemProgress(index, total, 0.65);
 
-        // 3. Intégration Miniature (support JPG et WEBP)
+        // Étape 4/7 : Intégration Miniature (si cochée)
         if (actualThumbPath && this.options.thumbnail !== false) {
+          this.sendItemProgress(index, total, 0.70);
           const tempMp3Path = path.join(this.folder, `${mp3BaseName}_temp.mp3`);
 
           const ffmpegThumbArgs = [
             '-y', '-i', fullMp3Path, '-i', actualThumbPath,
-            // Crop au centre pour faire un carré + Redimensionnement HD 1000x1000 avec filtre Lanczos
             '-filter_complex', '[1:v]crop=min(iw\\,ih):min(iw\\,ih),scale=1000:1000:flags=lanczos[v]',
             '-map', '0:a', '-map', '[v]',
-            '-map_metadata', '0', // Copie explicite de toutes les métadonnées (incl. paroles)
+            '-map_metadata', '0',
             '-c:a', 'copy', '-c:v', 'mjpeg', '-q:v', '1', '-id3v2_version', '3',
             '-metadata:s:v', 'title=Album cover', '-disposition:v:0', 'attached_pic'
           ].concat(tempMp3Path);
@@ -345,14 +433,17 @@ class DownloadHandler {
           await fs.rename(tempMp3Path, fullMp3Path);
         }
 
-        // 3.5 Injection finale des paroles (Passage dédié après tout traitement FFmpeg)
+        // Étape 5/7 : Injection finale des paroles
         const hasLyrics = this.options.lyrics && metadata.lyrics;
         if (hasLyrics) {
-          console.log(`[Lyrics Debug] Injection finale des paroles via node-id3 (USLT + COMM)...`);
-
+          this.sendItemProgress(index, total, 0.80);
           const tags = {
-            artist: metadata.artist,
-            albumArtist: metadata.albumArtist || metadata.artist,
+            title: metadata.title || undefined,
+            artist: metadata.artist || undefined,
+            albumArtist: metadata.albumArtist || metadata.artist || undefined,
+            album: metadata.album || undefined,
+            year: metadata.date || undefined,
+            trackNumber: metadata.track || undefined,
             unsynchronisedLyrics: {
               language: 'eng',
               text: metadata.plainLyrics
@@ -366,33 +457,35 @@ class DownloadHandler {
               { description: "LYRICS_SYNCED", value: metadata.lyrics }
             ]
           };
-
-          const success = NodeID3.update(tags, fullMp3Path);
-          console.log(`[Lyrics Debug] Résultat de l'injection node-id3: ${success ? 'Succès' : 'Échec'}`);
+          NodeID3.update(tags, fullMp3Path);
         }
 
-        // 4. Renommage final sans le préfixe
+        // Étape 6/7 : Renommage final
+        this.sendItemProgress(index, total, 0.90);
         const finalBaseName = (metadata.artist && metadata.title)
           ? `${metadata.artist} - ${metadata.title}`
-          : (metadata.title || mp3BaseName); 
+          : (metadata.title || mp3BaseName);
 
         const safeFinalName = finalBaseName.replace(/[\\/:*?"<>|]/g, '_').trim() + '.mp3';
         finalDest = path.join(this.folder, safeFinalName);
 
         await fs.rename(fullMp3Path, finalDest);
 
+        // Terminé
+        this.sendItemProgress(index, total, 1.0);
+
         return {
           title: metadata.title,
           artist: metadata.artist,
-          thumbnail: actualThumbPath, 
-          finalDest: finalDest 
+          thumbnail: actualThumbPath,
+          finalDest: finalDest
         };
       }
     } finally {
-      // 5. NETTOYAGE : basé sur l'ID pour ne pas supprimer les mauvais fichiers
+      // NETTOYAGE
       try {
-        const currentId = entry.id || ''; // Assure que currentId est défini
-        if (currentId && currentId.length > 5) { // Sécurité stricte pour éviter la suppression totale
+        const currentId = entry.id || '';
+        if (currentId && currentId.length > 5) {
           const remaining = await fs.readdir(this.folder);
           for (const file of remaining) {
             const fullPath = path.join(this.folder, file);
@@ -405,7 +498,6 @@ class DownloadHandler {
     }
   }
 
-  /** Resolve which thumbnail to use based on options and availability */
   resolveThumbnailPath(files, currentId, isPlaylist) {
     if (isPlaylist && this.options.usePlaylistThumbnail && this.playlistCoverPath) {
       return this.playlistCoverPath;
@@ -417,7 +509,6 @@ class DownloadHandler {
     return null;
   }
 
-  /** Logic to extract, clean and filter metadata based on user options */
   async extractAndCleanMetadata(infoJsonFile, index, playlistTitle) {
     const content = await fs.readFile(path.join(this.folder, infoJsonFile), 'utf8');
     const info = JSON.parse(content);
@@ -436,15 +527,14 @@ class DownloadHandler {
     const metadata = {};
     if (this.options.title) metadata.title = cleaned.title;
     if (this.options.artist) metadata.artist = cleaned.artist;
-    if (this.options.artist) metadata.albumArtist = cleaned.artist; // Important pour Apple Music
+    if (this.options.artist) metadata.albumArtist = cleaned.artist;
     if (this.options.date) metadata.date = rawMeta.date;
     if (this.options.track) metadata.track = rawMeta.track;
     if (this.options.album) {
       metadata.album = (this.options.usePlaylistThumbnail ? playlistTitle : rawMeta.album) || playlistTitle;
-      if (this.options.usePlaylistThumbnail) metadata.albumArtist = playlistTitle; // Uniformise l'album
+      if (this.options.usePlaylistThumbnail) metadata.albumArtist = playlistTitle;
     }
 
-    // On attache la durée et les versions nettoyées pour le traitement ultérieur (lyrics)
     metadata._raw = { ...cleaned, duration: rawMeta.duration };
 
     return metadata;
@@ -459,15 +549,10 @@ class DownloadHandler {
     }
   }
 
-  /**
-   * Nettoie intelligemment le titre et l'artiste sans IA.
-   * Sépare "Artiste - Titre" et retire les termes parasites. 
-   */
   cleanMetadata(rawTitle, rawArtist) {
     let title = rawTitle;
     let artist = rawArtist;
 
-    // 1. Détection du format "Artiste - Titre" dans le titre YouTube
     const separators = [' - ', ' – ', ' — ', ' | ', ' : '];
     for (const sep of separators) {
       if (title.includes(sep)) {
@@ -475,7 +560,6 @@ class DownloadHandler {
         const potentialArtist = parts[0].trim();
         const potentialTitle = parts.slice(1).join(sep).trim();
 
-        // On vérifie que la première partie n'est pas trop longue pour être un artiste (sécurité)
         if (potentialArtist.length < 100) {
           artist = potentialArtist;
           title = potentialTitle;
@@ -484,21 +568,15 @@ class DownloadHandler {
       }
     }
 
-    // 2. Fonction de nettoyage générique par Regex
     const cleanup = (str) => {
       return str
-        // Supprime tout ce qui est entre parenthèses ou crochets contenant des mots clés
         .replace(/[\(\[][^\]\)]*(official|video|audio|lyrics|lyric|clip|hq|hd|4k|8k|vevo|version|explicit|clean|visualizer|topic)[^\]\)]*[\)\]]/gi, '')
-        // Supprime les suffixes après un tiret ou une barre si ce sont des termes parasites
         .replace(/\s*[\-\|]\s*(official|video|audio|lyrics|lyric|clip|hq|hd|4k|8k|vevo|version|explicit|clean|visualizer|topic).*/gi, '')
-        // Nettoyage des "featuring" : on les transforme en virgule pour uniformiser (ex: "Artiste ft. Autre" -> "Artiste, Autre")
         .replace(/\s+(?:ft\.?|feat\.?|featuring)\s+/gi, ', ')
-        // Nettoie les espaces multiples
         .replace(/\s{2,}/g, ' ')
         .trim();
     };
 
-    // 3. Nettoyage final de l'artiste (on enlève VEVO ou "Topic")
     artist = artist.replace(/\s*[-|]?\s*(vevo|topic|official|channel|music)\b.*/gi, '').trim();
 
     return {
@@ -509,7 +587,6 @@ class DownloadHandler {
 
   async fetchLyricsData(title, artist, duration) {
     try {
-      // 1. Nettoyage du titre (Suppression de l'artiste si présent au début)
       let cleanedTitle = title;
       const separators = [' - ', ' – ', ' — ', ': '];
 
@@ -523,11 +600,9 @@ class DownloadHandler {
         }
       }
 
-      // 2. Nettoyage des suffixes inutiles
       cleanedTitle = cleanedTitle.replace(/\s*[\(\[][^\]\)]*(Music Video|Official|Lyrics|Audio)[^\]\)]*[\)\]]/gi, '');
       cleanedTitle = cleanedTitle.trim();
 
-      // LRCLIB est une API gratuite et performante pour les paroles LRC
       const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(cleanedTitle)}&duration=${Math.round(duration)}`;
       const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
       console.log(`[Lyrics Debug] URL LRCLIB (cleaned title): ${url}`);
@@ -535,7 +610,6 @@ class DownloadHandler {
 
       const data = await response.json();
 
-      // Regex améliorée pour supprimer tous les formats de timestamps [00:00.00], [00:00:00], [00:00], etc.
       const plain = data.plainLyrics || (data.syncedLyrics
         ? data.syncedLyrics.replace(/\[\d+:\d+[\.:]?\d*\]/g, '').replace(/\n{2,}/g, '\n').trim()
         : null);
@@ -553,7 +627,7 @@ class DownloadHandler {
   runCommand(command, args) {
     return new Promise((resolve, reject) => {
 
-      console.log(`[Exec] Running: ${command}`, args); // Log the array directly
+      console.log(`[Exec] Running: ${command}`, args);
       execFile(
         command,
         args,
